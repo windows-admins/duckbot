@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -16,23 +17,24 @@ var (
 	mongoDBUsername string
 	mongoDBPassword string
 	mongoDBDatabase string
+	session         *mgo.Session
 )
 
 func init() {
-	// mongoDBServer = os.Getenv("DUCKBOT_MONGODB_SERVER")
-	// mongoDBUsername = os.Getenv("DUCKBOT_MONGODB_USERNAME")
-	// mongoDBPassword = os.Getenv("DUCKBOT_MONGODB_PASSWORD")
-	// mongoDBDatabase = os.Getenv("DUCKBOT_MONGODB_DATABASE")
+	mongoDBDatabase = os.Getenv("DUCKBOT_MONGODB_DATABASE")
+	mongoDBPassword = os.Getenv("DUCKBOT_MONGODB_PASSWORD")
 	discordToken = os.Getenv("DUCKBOT_DISCORD_TOKEN")
+	session = dbCall()
 
 }
 
-type DiscordUser struct {
-	ID                      bson.ObjectId `bson:"_id,omitempty"`
-	snowflake               string
-	guild                   string
-	points                  int
-	totalOperationsInPeriod int
+// PointItem represents a document in the collection
+type PointItem struct {
+	Id                      bson.ObjectId `bson:"_id,omitempty"`
+	Item                    string
+	Guild                   string
+	Points                  int
+	TotalOperationsInPeriod int
 	LastReset               int
 }
 
@@ -40,7 +42,7 @@ func main() {
 
 	dg, err := discordgo.New("Bot " + discordToken)
 	if err != nil {
-		fmt.Println("error creating Discord session,", err)
+		fmt.Println("error creating Discord	ession,", err)
 		return
 	}
 
@@ -57,6 +59,7 @@ func main() {
 	<-sc
 
 	// Cleanly close down the Discord session.
+	session.Close()
 	dg.Close()
 
 }
