@@ -27,32 +27,21 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build Docker Image
       inputs:
         containerRegistry: 'rowdychildren-dockerhub'
         repository: 'rowdychildren/duckbot'
-        command: 'buildAndPush'
+        command: 'build'
         Dockerfile: '**/Dockerfile'
         tags: |
           $(MajorVersion).$(MinorVersion).$(PatchVersion)
-    - task: AzureKeyVault@1
+    - task: Docker@2
+      displayName: Push an image to Docker Hub
       inputs:
-        azureSubscription: 'duckbotazure'
-        KeyVaultName: 'duckbotdeploy'
-        SecretsFilter: 'duckbotppe-discord'
-        RunAsPreJob: true
-    - task: AzureResourceManagerTemplateDeployment@3
-      inputs:
-        deploymentScope: 'Resource Group'
-        azureResourceManagerConnection: 'duckbotazure'
-        subscriptionId: 'ba91aca8-b156-4d64-8673-564050f2f5f1'
-        action: 'Create Or Update Resource Group'
-        resourceGroupName: 'duckbotppe'
-        location: 'East US'
-        templateLocation: 'Linked artifact'
-        csmFile: 'deploy.json'
-        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot:$(MajorVersion).$(MinorVersion).$(PatchVersion)"'
-        deploymentMode: 'Incremental'
+        containerRegistry: 'rowdychildren-dockerhub'
+        repository: 'rowdychildren/duckbot'
+        command: 'push'
+        tags: '$(MajorVersion).$(MinorVersion).$(PatchVersion)'
     - task: CopyFiles@2
       inputs:
         SourceFolder: '$(System.DefaultWorkingDirectory)'
