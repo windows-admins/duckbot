@@ -1,82 +1,66 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strings"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/Azure/azure-sdk-for-go/storage"
 )
 
-// PointItem represents a document in the collection
-
-func updateScore(item string, operation string, guild string) []bson.ObjectId {
-
-	collection := session.DB(mongoDBDatabase).C("PointItems")
-	theID := returnItemID(item, guild)
-	println(theID)
-	if theID != nil {
-
-		if operation == "++" {
-			log.Output(0, "Existing Record, Adding one point")
-			err := collection.Update(bson.M{"_id": bson.ObjectId(theID[0])}, bson.M{"$inc": bson.M{"points": 1}})
-			if err != nil {
-				log.Fatal("Error updating record: ", err)
-				return nil
-			}
-			return []bson.ObjectId{theID[0]}
-		}
-		if operation == "--" {
-			log.Output(0, "Existing Record, Removing one point")
-			err := collection.Update(bson.M{"_id": theID[0]}, bson.M{"$inc": bson.M{"points": -1}})
-			if err != nil {
-				log.Fatal("Error updating record: ", err)
-				return nil
-			}
-			return []bson.ObjectId{theID[0]}
-		}
-
-	} else {
-		newID := bson.NewObjectId()
-		log.Output(0, "New Record, Creating and Adding one point")
-		if operation == "++" {
-
-			err := collection.Insert(&PointItem{
-				Id:     newID,
-				Item:   item,
-				Guild:  guild,
-				Points: 1,
-			})
-			if err != nil {
-				log.Fatal("Error updating record: ", err)
-				return nil
-			}
-			return []bson.ObjectId{newID}
-		}
-		if operation == "--" {
-			log.Output(0, "New Record, Creating and removing one point")
-			err := collection.Insert(&PointItem{
-				Id:     newID,
-				Item:   item,
-				Guild:  guild,
-				Points: -1,
-			})
-			if err != nil {
-				log.Fatal("Error updating record: ", err)
-				return nil
-			}
-			return []bson.ObjectId{newID}
+func updateScore(item string, operation string, guild string) int {
+	client, err := storage.NewBasicClient(storageAccount, storageAccessToken)
+	tableClient := client.GetTableService()
+	pointTable := tableClient.GetTableReference(storagePointTable)
+	entity := pointTable.GetEntityReference(guild, strings.ToUpper(item))
+	entityOptions := storage.GetEntityOptions{Select: []string{"Points"}}
+	entity.Get(30, storage.NoMetadata, &entityOptions)
+	if entity.Properties["Points"] == nil {
+		entity.Properties = map[string]interface{}{
+			"Points": 0,
 		}
 	}
-	return nil
-}
-
-func getPointsByID(id bson.ObjectId) int {
-
-	collection := session.DB(mongoDBDatabase).C("PointItems")
-	item := PointItem{}
-	err := collection.FindId(bson.ObjectId(id)).One(&item)
-	if err != nil {
-		log.Output(0, "Error locating record")
-		return 0
+	if operation == "++" {
+		log.Output(0, "Existing Record, Adding one point")
+		switch entity.Properties["Points"].(type) {
+		case int:
+			entity.Properties["Points"] = entity.Properties["Points"].(int) + 1
+		case float64:
+			entity.Properties["Points"] = entity.Properties["Points"].(float64) + 1
+		}
+		err = entity.InsertOrMerge(nil)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("Inserted! ")
+		}
+		switch entity.Properties["Points"].(type) {
+		case int:
+			return entity.Properties["Points"].(int)
+		case float64:
+			return int(entity.Properties["Points"].(float64))
+		}
 	}
-	return item.Points
+	if operation == "--" {
+		log.Output(0, "Existing Record, removing one point")
+		switch entity.Properties["Points"].(type) {
+		case int:
+			entity.Properties["Points"] = entity.Properties["Points"].(int) - 1
+		case float64:
+			entity.Properties["Points"] = entity.Properties["Points"].(float64) - 1
+		}
+		err = entity.InsertOrMerge(nil)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("Inserted! ")
+		}
+		switch entity.Properties["Points"].(type) {
+		case int:
+			return entity.Properties["Points"].(int)
+		case float64:
+			return int(entity.Properties["Points"].(float64))
+		}
+	}
+	return 0
 }

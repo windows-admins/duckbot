@@ -7,42 +7,30 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
-	discordToken    string
-	mongoDBServer   string
-	mongoDBUsername string
-	mongoDBPassword string
-	mongoDBDatabase string
-	session         *mgo.Session
+	discordToken       string
+	storageAccount     string
+	storageAccessToken string
+	storagePointTable  string
+	storageMemberTable string
 )
 
 func init() {
-	mongoDBDatabase = os.Getenv("DUCKBOT_MONGODB_DATABASE")
-	mongoDBPassword = os.Getenv("DUCKBOT_MONGODB_PASSWORD")
+	storageAccount = os.Getenv("DUCKBOT_STORAGEACCOUNT_NAME")
+	storagePointTable = os.Getenv("DUCKBOT_STORAGEACCOUNT_POINTTABLE")
+	storageMemberTable = os.Getenv("DUCKBOT_STORAGEACCOUNT_MEMBERTABLE")
+	storageAccessToken = os.Getenv("DUCKBOT_STORAGEACCOUNT_TOKEN")
 	discordToken = os.Getenv("DUCKBOT_DISCORD_TOKEN")
-	session = dbCall()
 
-}
-
-// PointItem represents a document in the collection
-type PointItem struct {
-	Id                      bson.ObjectId `bson:"_id,omitempty"`
-	Item                    string
-	Guild                   string
-	Points                  int
-	TotalOperationsInPeriod int
-	LastReset               int
 }
 
 func main() {
 
 	dg, err := discordgo.New("Bot " + discordToken)
 	if err != nil {
-		fmt.Println("error creating Discord	ession,", err)
+		fmt.Println("error creating Discord	session,", err)
 		return
 	}
 
@@ -59,7 +47,6 @@ func main() {
 	<-sc
 
 	// Cleanly close down the Discord session.
-	session.Close()
 	dg.Close()
 
 }

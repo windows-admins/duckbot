@@ -1,0 +1,122 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "location": {
+        "type": "string",
+        "defaultValue": "[resourceGroup().location]",
+        "metadata": {
+          "description": "Location for all resources."
+        }
+      },
+      "deploymentName": {
+        "type": "string",
+        "defaultValue": "duckbot",
+        "metadata": {
+          "description": "Container group name"
+        }
+      },
+      "discordBotToken": {
+          "type": "securestring"
+      },
+      "image": {
+        "type": "string",
+        "metadata": {
+          "description": "Container image to deploy. Should be of the form accountName/imagename:tag for images stored in Docker Hub or a fully qualified URI for a private registry like the Azure Container Registry."
+        },
+        "defaultValue": "rowdychildren/duckbot3"
+      },
+      "cpuCores": {
+        "type": "string",
+        "metadata": {
+          "description": "The number of CPU cores to allocate to the container. Must be an integer."
+        },
+        "defaultValue": "1.0"
+      },
+      "memoryInGb": {
+        "type": "string",
+        "metadata": {
+          "description": "The amount of memory to allocate to the container in gigabytes."
+        },
+        "defaultValue": "1.5"
+      }
+    },
+    "resources": [
+          {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {},
+      "resources": [
+        {
+          "name": "points",
+          "type": "tables",
+          "apiVersion": "2019-06-01",
+          "dependsOn": [
+            "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
+          ]
+        },
+        {
+          "name": "members",
+          "type": "tables",
+          "apiVersion": "2019-06-01",
+          "dependsOn": [
+            "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
+          ]
+        }
+      ]
+    },
+      {
+        "name": "[parameters('deploymentName')]",
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2019-12-01",
+        "location": "[parameters('location')]",
+        "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) ))]"],
+        "properties": {
+          "containers": [
+            {
+              "name": "[parameters('deploymentName')]",
+              "properties": {
+                "image": "[parameters('image')]",
+                "resources": {
+                  "requests": {
+                    "cpu": "[parameters('cpuCores')]",
+                    "memoryInGB": "[parameters('memoryInGb')]"
+                  }
+                },
+                "environmentVariables": [
+                    {
+                        "name": "DUCKBOT_STORAGEACCOUNT_NAME",
+                        "value": "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
+                    },
+                    {
+                        "name": "DUCKBOT_STORAGEACCOUNT_POINTTABLE",
+                        "value": "points"
+                    },
+                    {
+                        "name": "DUCKBOT_STORAGEACCOUNT_MEMBERTABLE",
+                        "value": "member"
+                    },
+                    {
+                        "name": "DUCKBOT_STORAGEACCOUNT_TOKEN",
+                        "secureValue": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+                    },
+                    {
+                        "name": "DUCKBOT_DISCORD_TOKEN",
+                        "secureValue": "[parameters('discordBotToken')]"
+                    }
+                ]
+              }
+            }
+          ],
+          "osType": "Linux",
+          "restartPolicy": "Always"
+        }
+      }
+    ]
+  }
