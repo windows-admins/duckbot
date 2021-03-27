@@ -44,5 +44,5 @@ stages:
         location: 'East US'
         templateLocation: 'Linked artifact'
         csmFile: 'deploy.json'
-        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot-ppe"'
+        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "index.docker.io/rowdychildren/duckbot-ppe"'
         deploymentMode: 'Incremental'
