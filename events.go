@@ -27,7 +27,7 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		item := pointsData[0]
 		operation := pointsData[1]
 		user, _ := s.User(item)
-		if operation == "++" || operation == "--" {
+		if operation == "++" || operation == "--" || operation == "—" {
 			handlePlusMinus(item, operation, s, m, user)
 		}
 		return

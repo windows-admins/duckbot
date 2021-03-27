@@ -41,7 +41,7 @@ func updateScore(item string, operation string, guild string) int {
 			return int(entity.Properties["Points"].(float64))
 		}
 	}
-	if operation == ("--" || "—") {
+	if operation == "--" || operation == "—" {
 		log.Output(0, "Existing Record, removing one point")
 		switch entity.Properties["Points"].(type) {
 		case int:
