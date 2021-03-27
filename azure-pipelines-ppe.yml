@@ -8,14 +8,11 @@ trigger:
 resources:
 - repo: self
 
-name: $(MajorVersion).$(MinorVersion).$(PatchVersion) - $(Build.BuildId)
+name: $(MajorVersion).$(MinorVersion).$(PatchVersion)
 
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '28ddc8b4-48bd-4be8-bd65-4b94a64aa330'
-  imageRepository: 'windowsadminsduckbot'
-  containerRegistry: 'duckbot.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
 
   # Agent VM image name
@@ -33,10 +30,10 @@ stages:
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: 'rowdychildren-dockerhub'
+        repository: 'rowdychildren/duckbot'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
         tags: |
           $(tag)
           $(MajorVersion).$(MinorVersion).$(PatchVersion)
@@ -56,5 +53,5 @@ stages:
         location: 'East US'
         templateLocation: 'Linked artifact'
         csmFile: 'deploy.json'
-        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "https://duckbot.azurecr.io/windowsadminsduckbot:$(tag)"'
+        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot:$(tag)"'
         deploymentMode: 'Incremental'
