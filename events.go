@@ -35,8 +35,10 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	parameters := strings.Split(m.Content, " ")
-	if RegexUserPatternID.MatchString(parameters[1]) {
-		println("Someone Mentioned Us!")
+	if RegexUserPatternID.MatchString(parameters[0]) {
+		if strings.ToUpper(parameters[1]) == "LEADERBOARD" {
+			s.ChannelMessageSend(m.ChannelID, "Here is the leaderboard!")
+		}
 		s.ChannelMessageSend(m.ChannelID, "Quack!")
 	}
 
