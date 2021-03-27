@@ -13,7 +13,6 @@ name: $(MajorVersion).$(MinorVersion).$(PatchVersion)
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '28ddc8b4-48bd-4be8-bd65-4b94a64aa330'
-  tag: '$(Build.BuildId)'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -35,7 +34,6 @@ stages:
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: |
-          $(tag)
           $(MajorVersion).$(MinorVersion).$(PatchVersion)
     - task: AzureKeyVault@1
       inputs:
@@ -53,5 +51,15 @@ stages:
         location: 'East US'
         templateLocation: 'Linked artifact'
         csmFile: 'deploy.json'
-        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot:$(tag)"'
+        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot:$(MajorVersion).$(MinorVersion).$(PatchVersion)"'
         deploymentMode: 'Incremental'
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(System.DefaultWorkingDirectory)'
+        Contents: 'deploy.json'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
