@@ -54,7 +54,7 @@
       "properties": {},
       "resources": [
         {
-          "name": "points",
+          "name": "default/points",
           "type": "tableServices/tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
@@ -62,7 +62,7 @@
           ]
         },
         {
-          "name": "members",
+          "name": "default/members",
           "type": "tableServices/tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
