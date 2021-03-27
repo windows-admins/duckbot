@@ -3,48 +3,40 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- ppe
+- main
 
 resources:
 - repo: self
 
+name: $(MajorVersion).$(MinorVersion).$(PatchVersion) - $(Build.BuildId)
+
 variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '28ddc8b4-48bd-4be8-bd65-4b94a64aa330'
+  imageRepository: 'windowsadminsduckbot'
+  containerRegistry: 'duckbot.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
 
-name: $(MajorVersion).$(MinorVersion).$(PatchVersion)
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
 
 stages:
 - stage: Build
-  displayName: Build image
+  displayName: Build and push stage
   jobs:
   - job: Build
     displayName: Build
     pool:
-      vmImage: ubuntu-latest
+      vmImage: $(vmImageName)
     steps:
-    # - task: Docker@2
-    #   displayName: "Build Docker Image"
-    #   inputs:
-    #     containerRegistry: 'rowdychildren-dockerhub'
-    #     repository: 'rowdychildren/duckbot-ppe'
-    #     command: 'buildAndPush'
-    #     Dockerfile: '**/Dockerfile'
-    #     tags: '$(tag)'
-    - task: AzureKeyVault@1
+    - task: Docker@2
+      displayName: Build and push an image to container registry
       inputs:
-        azureSubscription: 'duckbotazure'
-        KeyVaultName: 'duckbotdeploy'
-        SecretsFilter: 'duckbotppe-discord'
-        RunAsPreJob: true
-    - task: AzureResourceManagerTemplateDeployment@3
-      inputs:
-        deploymentScope: 'Resource Group'
-        azureResourceManagerConnection: 'duckbotazure'
-        subscriptionId: 'ba91aca8-b156-4d64-8673-564050f2f5f1'
-        action: 'Create Or Update Resource Group'
-        resourceGroupName: 'duckbotppe'
-        location: 'East US'
-        templateLocation: 'Linked artifact'
-        csmFile: 'deploy.json'
-        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "https://docker.io/rowdychildren/duckbot-ppe"'
-        deploymentMode: 'Incremental'
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          $(MajorVersion).$(MinorVersion).$(PatchVersion)
