@@ -11,7 +11,7 @@ resources:
 variables:
   tag: '$(Build.BuildId)'
 
-name: Deploy Preprod DuckBot
+name: $(MajorVersion).$(MinorVersion).$(PatchVersion)
 
 stages:
 - stage: Build
