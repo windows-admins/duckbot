@@ -54,7 +54,7 @@
       "properties": {},
       "resources": [
         {
-          "name": "points",
+          "name": "default/points",
           "type": "tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
@@ -62,7 +62,7 @@
           ]
         },
         {
-          "name": "members",
+          "name": "default/members",
           "type": "tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
@@ -83,7 +83,6 @@
               "name": "[parameters('deploymentName')]",
               "properties": {
                 "image": "[parameters('image')]",
-                "imageType": "Public",
                 "resources": {
                   "requests": {
                     "cpu": "[parameters('cpuCores')]",
