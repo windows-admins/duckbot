@@ -49,6 +49,10 @@ func handleQuack(s *discordgo.Session, m *discordgo.Message) {
 }
 
 func handlePlusMinus(item string, operation string, s *discordgo.Session, m *discordgo.Message, user *discordgo.User) {
+	if item == m.Author.ID {
+		s.ChannelMessageSend(m.ChannelID, "Really now? Don't try to steal points!")
+		return
+	}
 	println("Updating Score for" + item)
 	score := updateScore(item, operation, m.GuildID)
 	var plural string
@@ -60,10 +64,6 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 	if user == nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d vacination%[3]s", item, score, plural))
 	} else {
-		if user.ID == m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, "Really now? Don't try to steal points!")
-			return
-		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vacination%[3]s", item, score, plural))
 	}
 
