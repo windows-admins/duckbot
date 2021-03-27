@@ -16,6 +16,14 @@
           "description": "Container group name"
         }
       },
+      "imageType": {
+            "type": "string",
+            "allowedValues": [
+                "Public",
+                "Private"
+            ],
+            "defaultValue": "Public"
+        },
       "discordBotToken": {
           "type": "securestring"
       },
