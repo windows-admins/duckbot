@@ -24,7 +24,7 @@ stages:
       displayName: "Build Docker Image"
       inputs:
         containerRegistry: 'rowdychildren-dockerhub'
-        repository: 'duckbot-ppe'
+        repository: 'rowdychildren/duckbot-ppe'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: '$(tag)'
