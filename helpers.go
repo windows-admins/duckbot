@@ -2,6 +2,7 @@ package main
 
 import (
 	"regexp"
+	"strings"
 )
 
 func extractPlusMinusEventData(message string) []string {
@@ -11,6 +12,10 @@ func extractPlusMinusEventData(message string) []string {
 	println("Message: " + message)
 	if res != nil {
 		res[0][1] = (*regexp.MustCompile(`(^\!)`)).ReplaceAllString(res[0][1], "")
+		res[0][1] = strings.Replace(res[0][1], "/", "")
+		res[0][1] = strings.Replace(res[0][1], "\\", "")
+		res[0][1] = strings.Replace(res[0][1], "#", "")
+		res[0][1] = strings.Replace(res[0][1], "?", "")
 		println("Extracted Subject: " + res[0][1] + " Extracted Operation: " + res[0][2])
 		return []string{res[0][1], res[0][2]}
 	}
