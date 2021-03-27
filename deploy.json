@@ -16,28 +16,20 @@
           "description": "Container group name"
         }
       },
-      "imageType": {
-            "type": "string",
-            "allowedValues": [
-                "Public",
-                "Private"
-            ],
-            "defaultValue": "Public"
-        },
-        "botserviceskuname": {
-            "type": "string",
-            "defaultValue": "B1",
-            "metadata": {
-                "description": "The SKU Name of App Service Plan for the discord bot"
-            }
-        },
-        "botservicesku": {
-            "type": "string",
-            "defaultValue": "Basic",
-            "metadata": {
-                "description": "The SKU of App Service Plan for the discord bot"
-            }
-        },
+      "botserviceskuname": {
+          "type": "string",
+          "defaultValue": "B1",
+          "metadata": {
+              "description": "The SKU Name of App Service Plan for the discord bot"
+          }
+      },
+      "botservicesku": {
+          "type": "string",
+          "defaultValue": "Basic",
+          "metadata": {
+              "description": "The SKU of App Service Plan for the discord bot"
+          }
+      },
       "discordBotToken": {
           "type": "securestring"
       },
@@ -59,20 +51,6 @@
           "description": "Container image to deploy. Should be of the form accountName/imagename:tag for images stored in Docker Hub or a fully qualified URI for a private registry like the Azure Container Registry."
         },
         "defaultValue": "rowdychildren/duckbot3"
-      },
-      "cpuCores": {
-        "type": "string",
-        "metadata": {
-          "description": "The number of CPU cores to allocate to the container. Must be an integer."
-        },
-        "defaultValue": "1.0"
-      },
-      "memoryInGb": {
-        "type": "string",
-        "metadata": {
-          "description": "The amount of memory to allocate to the container in gigabytes."
-        },
-        "defaultValue": "1.5"
       }
     },
     "resources": [
@@ -173,11 +151,11 @@
                       },   
                       {   
                              "name": "DUCKBOT_STORAGEACCOUNT_TOKEN",
-                             "secureValue": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+                             "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
                       },   
                       {   
                              "name": "DUCKBOT_DISCORD_TOKEN",
-                             "secureValue": "[parameters('discordBotToken')]"
+                             "value": "[parameters('discordBotToken')]"
                       }                     
                  ]
              },
