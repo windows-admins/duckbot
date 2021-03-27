@@ -34,10 +34,6 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if !strings.HasPrefix(m.Content, prefix+commands["warning"]) {
-		return //Doesn't have the command syntax prefix
-	}
-
 	parameters := strings.Split(m.Content, " ")
 	if RegexUserPatternID.MatchString(parameters[1]) {
 		println("Someone Mentioned Us!")
