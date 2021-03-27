@@ -62,9 +62,9 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 		plural = "s"
 	}
 	if user == nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d vacination%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d vaccination%[3]s", item, score, plural))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vacination%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vaccination%[3]s", item, score, plural))
 	}
 
 }
