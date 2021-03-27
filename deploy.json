@@ -24,8 +24,34 @@
             ],
             "defaultValue": "Public"
         },
+        "botserviceskuname": {
+            "type": "string",
+            "defaultValue": "B1",
+            "metadata": {
+                "description": "The SKU Name of App Service Plan for the discord bot"
+            }
+        },
+        "botservicesku": {
+            "type": "string",
+            "defaultValue": "Basic",
+            "metadata": {
+                "description": "The SKU of App Service Plan for the discord bot"
+            }
+        },
       "discordBotToken": {
           "type": "securestring"
+      },
+      "dockerRegistryUrl": {
+          "type": "string",
+          "defaultValue": "https://index.docker.io"
+      },
+      "dockerRegistryUsername" :{
+          "type": "string",
+          "defaultValue": ""
+      },
+      "dockerRegistryPassword" :{
+          "type": "string",
+          "defaultValue": ""
       },
       "image": {
         "type": "string",
@@ -79,52 +105,84 @@
         }
       ]
     },
-      {
-        "name": "[parameters('deploymentName')]",
-        "type": "Microsoft.ContainerInstance/containerGroups",
-        "apiVersion": "2019-12-01",
-        "location": "[parameters('location')]",
-        "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) ))]"],
-        "properties": {
-          "containers": [
-            {
-              "name": "[parameters('deploymentName')]",
-              "properties": {
-                "image": "[parameters('image')]",
-                "resources": {
-                  "requests": {
-                    "cpu": "[parameters('cpuCores')]",
-                    "memoryInGB": "[parameters('memoryInGb')]"
-                  }
-                },
-                "environmentVariables": [
-                    {
-                        "name": "DUCKBOT_STORAGEACCOUNT_NAME",
-                        "value": "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
-                    },
-                    {
-                        "name": "DUCKBOT_STORAGEACCOUNT_POINTTABLE",
-                        "value": "points"
-                    },
-                    {
-                        "name": "DUCKBOT_STORAGEACCOUNT_MEMBERTABLE",
-                        "value": "member"
-                    },
-                    {
-                        "name": "DUCKBOT_STORAGEACCOUNT_TOKEN",
-                        "secureValue": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
-                    },
-                    {
-                        "name": "DUCKBOT_DISCORD_TOKEN",
-                        "secureValue": "[parameters('discordBotToken')]"
-                    }
-                ]
-              }
+    {
+            "apiVersion": "2018-02-01",
+            "type": "Microsoft.Web/serverfarms",
+            "kind": "linux",
+            "name": "[concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))]",
+            "location": "[parameters('location')]",
+            "comments": "App Service Plan used for the discord bot",
+            "properties": {
+                "name": "[concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))]",
+                "workerSize": "0",
+                "workerSizeId": "0",
+                "numberOfWorkers": "1",
+                "reserved": true  
+            },
+            "dependsOn": [],
+            "sku": {
+                "Tier": "[parameters('botservicesku')]",
+                "Name": "[parameters('botserviceskuname')]"
             }
-          ],
-          "osType": "Linux",
-          "restartPolicy": "Always"
-        }
-      }
+        },
+    {
+        "type": "Microsoft.Web/sites",
+        "name": "[concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))]",
+        "apiVersion": "2018-11-01",
+        "kind": "app,linux,container",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+            "[resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) ))]",
+            "[resourceId('Microsoft.Web/serverfarms', concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id)))]"
+            ],
+         "properties": {
+             "name": "[concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))]",
+             "siteConfig": {
+                 "alwaysOn": true,
+                 "appCommandLine": "duckbot",
+                 "linuxFxVersion": "[concat('DOCKER|', parameters('image'))]",
+                 "appSettings": [
+                     {
+                         "name": "DOCKER_REGISTRY_SERVER_URL",
+                         "value": "[parameters('dockerRegistryUrl')]"
+                     },
+                     {
+                          "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                           "value": "false"
+                     },
+                     {
+                           "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+                           "value": "[parameters('dockerRegistryUsername')]"
+                      },
+                      
+                      {
+                            "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+                            "value": "[parameters('dockerRegistryPassword')]"
+                      },
+                      {
+                             "name": "DUCKBOT_STORAGEACCOUNT_NAME",
+                             "value": "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
+                      },   
+                      {   
+                             "name": "DUCKBOT_STORAGEACCOUNT_POINTTABLE",
+                             "value": "points"
+                      },   
+                      {   
+                             "name": "DUCKBOT_STORAGEACCOUNT_MEMBERTABLE",
+                             "value": "member"
+                      },   
+                      {   
+                             "name": "DUCKBOT_STORAGEACCOUNT_TOKEN",
+                             "secureValue": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+                      },   
+                      {   
+                             "name": "DUCKBOT_DISCORD_TOKEN",
+                             "secureValue": "[parameters('discordBotToken')]"
+                      }                     
+                 ]
+             },
+             "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id)) )]"
+         }
+    }
     ]
   }
