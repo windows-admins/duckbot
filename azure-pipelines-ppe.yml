@@ -55,3 +55,13 @@ stages:
         csmFile: 'deploy.json'
         overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "rowdychildren/duckbot:$(tag)"'
         deploymentMode: 'Incremental'
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(System.DefaultWorkingDirectory)'
+        Contents: 'deploy.json'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
