@@ -83,6 +83,7 @@
               "name": "[parameters('deploymentName')]",
               "properties": {
                 "image": "[parameters('image')]",
+                "imageType": "Public",
                 "resources": {
                   "requests": {
                     "cpu": "[parameters('cpuCores')]",
