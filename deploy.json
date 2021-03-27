@@ -54,16 +54,16 @@
       "properties": {},
       "resources": [
         {
-          "name": "default/points",
-          "type": "tables",
+          "name": "points",
+          "type": "tableServices/tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
             "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
           ]
         },
         {
-          "name": "default/members",
-          "type": "tables",
+          "name": "members",
+          "type": "tableServices/tables",
           "apiVersion": "2019-06-01",
           "dependsOn": [
             "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"
