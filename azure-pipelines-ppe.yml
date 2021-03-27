@@ -40,3 +40,21 @@ stages:
         tags: |
           $(tag)
           $(MajorVersion).$(MinorVersion).$(PatchVersion)
+    - task: AzureKeyVault@1
+      inputs:
+        azureSubscription: 'duckbotazure'
+        KeyVaultName: 'duckbotdeploy'
+        SecretsFilter: 'duckbotppe-discord'
+        RunAsPreJob: true
+    - task: AzureResourceManagerTemplateDeployment@3
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: 'duckbotazure'
+        subscriptionId: 'ba91aca8-b156-4d64-8673-564050f2f5f1'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'duckbotppe'
+        location: 'East US'
+        templateLocation: 'Linked artifact'
+        csmFile: 'deploy.json'
+        overrideParameters: '-deploymentName "duckbotppe" -discordBotToken "$(duckbotppe-discord)" -image "duckbot.azurecr.io/windowsadminsduckbot:$(tag)"'
+        deploymentMode: 'Incremental'
