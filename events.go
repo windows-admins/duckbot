@@ -62,6 +62,7 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 	} else {
 		if user.ID == m.Author.ID {
 			s.ChannelMessageSend(m.ChannelID, "Really now? Don't try to steal points!")
+			return
 		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vacination%[3]s", item, score, plural))
 	}
