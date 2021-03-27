@@ -13,6 +13,7 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		handleQuack(s, m)
 
 	}
+	if 
 	pointsData := extractPlusMinusEventData(m.Content)
 	if pointsData != nil {
 		item := pointsData[0]
@@ -23,6 +24,16 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
+		if !strings.HasPrefix(m.Content, prefix+commands["warning"]) {
+			return //Doesn't have the command syntax prefix
+		}
+   
+		parameters := strings.Split(m.Content, " ")
+		if RegexUserPatternID.MatchString(parameters[1]){ 
+			println("Someone Mentioned Us!")
+			s.ChannelMessageSend(m.ChannelID, "Quack!")
+		}
 
 }
 
