@@ -32,7 +32,7 @@ stages:
         containerRegistry: 'rowdychildren-dockerhub'
         repository: 'rowdychildren/duckbot'
         command: 'build'
-        Dockerfile: '**/Dockerfile'
+        Dockerfile: '**/BotDockerFile'
         tags: |
           $(MajorVersion).$(MinorVersion).$(PatchVersion)
     - task: Docker@2
