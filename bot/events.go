@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"regexp"
+	"strings"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const (
@@ -22,6 +25,8 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		handleQuack(s, m)
 
 	}
+
+	//Check for ++ or -- or ==
 	pointsData := extractPlusMinusEventData(m.Content)
 	if pointsData != nil {
 		item := pointsData[0]
@@ -30,7 +35,21 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		if operation == "++" || operation == "--" || operation == "—" {
 			handlePlusMinus(item, operation, s, m, user)
 		}
-		return
+	}
+
+	//Check for Mention of this bot user ID in this message
+	mentionMap := make(map[string]bool)
+	for i := 0; i < len(m.Mentions); i++ {
+		mentionMap[m.Mentions[i].ID] = true
+	}
+	if _, ok := mentionMap[s.State.User.ID]; ok {
+		println("Someone tagged me! I wonder if they want the LeaderBoard... ")
+		//Check for "LeaderBoard" with word boundaries
+		leaderboardMatch, _ := regexp.MatchString(".*\\bLEADERBOARD\\b*.", strings.ToUpper(m.Content))
+		if leaderboardMatch {
+			println("They did!")
+			handleLeaderboard(s, m)
+		}
 	}
 
 	// parameters := strings.Split(m.Content, " ")
@@ -41,6 +60,7 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 	// 	s.ChannelMessageSend(m.ChannelID, "Quack!")
 	// }
 
+	return
 }
 
 func handleQuack(s *discordgo.Session, m *discordgo.Message) {
@@ -73,4 +93,39 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vaccination%[3]s", item, score, plural))
 	}
 
+}
+
+func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
+	// if item == m.Author.ID {
+	// 	s.ChannelMessageSend(m.ChannelID, "Really now? Don't try to steal points!")
+	// 	return
+	// }
+	println("Printing Leaderboard for " + m.Author.Username)
+	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		URL:         "",
+		Type:        discordgo.EmbedTypeRich,
+		Title:       "",
+		Description: "Here are the leaderboards!",
+		Timestamp:   time.Now().Local().String(),
+		Color:       0,
+		Footer:      &discordgo.MessageEmbedFooter{IconURL: m.Author.AvatarURL(""), Text: fmt.Sprintf("Invoked by %s", m.Author.Username)},
+		Image:       &discordgo.MessageEmbedImage{},
+		Thumbnail:   &discordgo.MessageEmbedThumbnail{},
+		Video:       &discordgo.MessageEmbedVideo{},
+		Provider:    &discordgo.MessageEmbedProvider{},
+		Author:      &discordgo.MessageEmbedAuthor{},
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Users",
+				Value:  "[Leaderboard](https://duckbotdiscorduku6efjff3bps.azurewebsites.net/guild/618712310185197588/members)",
+				Inline: true,
+			},
+			{
+				Name:   "Things",
+				Value:  "[Leaderboard](https://duckbotdiscorduku6efjff3bps.azurewebsites.net/guild/618712310185197588/things)",
+				Inline: true,
+			},
+		},
+	},
+	)
 }
