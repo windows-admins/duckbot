@@ -162,5 +162,22 @@
              "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id)) )]"
          }
     }
-    ]
+    ],
+    "outputs": {
+        "apiEndpoints": {
+            "type": "array",
+            "value": [
+                {
+                    "comments": "Might be able to use a function, enumerate DUCKBOT_STORAGEACCOUNT_NAME or DUCKBOT_STORAGEACCOUNT_POINTTABLE and get a list of 'guilds' to build a list for all or each tenant, currently these statically query WinAdmins",
+                    "name": "TopMembers",
+                    "value": "[uri(resourceId('Microsoft.Web/sites',concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))),'guild/618712310185197588/members')]"
+                },
+                {
+                    "comments": "Might be able to use a function, enumerate DUCKBOT_STORAGEACCOUNT_NAME or DUCKBOT_STORAGEACCOUNT_POINTTABLE and get a list of 'guilds' to build a list for all or each tenant, currently these statically query WinAdmins",
+                    "name": "TopThings",
+                    "value": "[uri(resourceId('Microsoft.Web/sites',concat(concat(parameters('deploymentName'),'discord'), uniqueString(resourceGroup().id))),'guild/618712310185197588/members')]"
+                }
+            ]
+        }
+    }
   }
