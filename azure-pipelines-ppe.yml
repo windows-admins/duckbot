@@ -29,10 +29,10 @@ stages:
     - task: Docker@2
       displayName: Build Docker Image
       inputs:
+        repository: 'rowdychildren/duckbot'
         command: 'build'
         Dockerfile: '**/BotDockerFile'
-        tags: |
-          $(MajorVersion).$(MinorVersion).$(PatchVersion)
+        tags: '$(MajorVersion).$(MinorVersion).$(PatchVersion)'
     - task: Docker@2
       displayName: Push an image to Docker Hub
       inputs:
