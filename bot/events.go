@@ -89,6 +89,9 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 	}
 	if user == nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d vaccination%[3]s", item, score, plural))
+		if strings.ToUpper(item) == "SPINNYGORILLA" {
+			s.ChannelMessageSend(m.ChannelID, "https://giphy.com/gifs/afvpets-afv-gorilla-KPgOYtIRnFOOk")
+		}
 	} else {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d vaccination%[3]s", item, score, plural))
 	}
