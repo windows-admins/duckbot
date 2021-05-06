@@ -45,7 +45,7 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 	if _, ok := mentionMap[s.State.User.ID]; ok {
 		println("Someone tagged me! I wonder if they want the LeaderBoard... ")
 		//Check for "LeaderBoard" with word boundaries
-		leaderboardMatch, _ := regexp.MatchString(".*\\bLEADERBOARD\\b*.", strings.ToUpper(m.Content))
+		leaderboardMatch, _ := regexp.MatchString(".*\\bLEADERBOARD\\b.*", strings.ToUpper(m.Content))
 		if leaderboardMatch {
 			println("They did!")
 			handleLeaderboard(s, m)
