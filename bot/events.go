@@ -70,7 +70,7 @@ func handleQuack(s *discordgo.Session, m *discordgo.Message) {
 
 func handlePlusMinus(item string, operation string, s *discordgo.Session, m *discordgo.Message, user *discordgo.User) {
 	if item == m.Author.ID {
-		s.ChannelMessageSend(m.ChannelID, "I will show you where you can put that boot")
+		s.ChannelMessageSend(m.ChannelID, "Santa told me you get coal this year")
 		return
 	}
 	println("Updating Score for" + item)
@@ -88,12 +88,12 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 		plural = "s"
 	}
 	if user == nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d boot%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d present%[3]s", item, score, plural))
 		if strings.ToUpper(item) == "SPINNYGORILLA" {
 			s.ChannelMessageSend(m.ChannelID, "https://giphy.com/gifs/afvpets-afv-gorilla-KPgOYtIRnFOOk")
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d boot%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d present%[3]s", item, score, plural))
 	}
 
 }
