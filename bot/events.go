@@ -93,7 +93,7 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 			s.ChannelMessageSend(m.ChannelID, "https://giphy.com/gifs/afvpets-afv-gorilla-KPgOYtIRnFOOk")
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d V%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d %[3]s", item, score, plural))
 	}
 
 }
