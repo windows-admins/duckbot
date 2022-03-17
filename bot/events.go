@@ -70,7 +70,7 @@ func handleQuack(s *discordgo.Session, m *discordgo.Message) {
 
 func handlePlusMinus(item string, operation string, s *discordgo.Session, m *discordgo.Message, user *discordgo.User) {
 	if item == m.Author.ID {
-		s.ChannelMessageSend(m.ChannelID, "Not even those chalk flavored sweetheart candies for you")
+		s.ChannelMessageSend(m.ChannelID, "Not even those weird strawberry hard candies for you")
 		return
 	}
 	println("Updating Score for" + item)
@@ -83,17 +83,17 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 
 	var plural string
 	if score == 1 {
-		plural = ""
+		plural = "Chocolate Bunny"
 	} else {
-		plural = "s"
+		plural = "Chocolate Bunnies"
 	}
 	if user == nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d Valentine%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d %[3]s", item, score, plural))
 		if strings.ToUpper(item) == "SPINNYGORILLA" {
 			s.ChannelMessageSend(m.ChannelID, "https://giphy.com/gifs/afvpets-afv-gorilla-KPgOYtIRnFOOk")
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d Valentine%[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d %[3]s", item, score, plural))
 	}
 
 }
