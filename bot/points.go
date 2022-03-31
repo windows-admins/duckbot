@@ -21,7 +21,7 @@ func updateScore(item string, operation string, guild string, isUser bool) int {
 			"isUser": isUser,
 		}
 	}
-	if operation == "++" {
+	if operation == "--" || operation == "—" {
 		log.Output(0, "Existing Record, Adding one point")
 		entity.Properties["isUser"] = isUser
 		switch entity.Properties["Points"].(type) {
@@ -43,7 +43,7 @@ func updateScore(item string, operation string, guild string, isUser bool) int {
 			return int(entity.Properties["Points"].(float64))
 		}
 	}
-	if operation == "--" || operation == "—" {
+	if operation == "++" {
 		log.Output(0, "Existing Record, removing one point")
 		entity.Properties["isUser"] = isUser
 		switch entity.Properties["Points"].(type) {
