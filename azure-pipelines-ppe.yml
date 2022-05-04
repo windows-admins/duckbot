@@ -15,7 +15,7 @@ variables:
   dockerRegistryServiceConnection: '28ddc8b4-48bd-4be8-bd65-4b94a64aa330'
 
   # Agent VM image name
-  vmImageName: 'windows-2019'
+  vmImageName: 'ubuntu-latest'
 
 stages:
 - stage: Build
