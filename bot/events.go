@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -23,9 +22,13 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 	duckMatch, _ := regexp.MatchString(".*[Qq][Uu][Aa][Cc][Kk]*.", m.Content)
 	if duckMatch {
 		handleQuack(s, m)
-
 	}
-
+	
+	intuneMatch, _ := regexp.MatchString("(?i).*intune.*", m.Content)
+	if intuneMatch && !strings.Contains(m.Content, "Intune") {
+		handleIntune(s, m)
+	}
+	
 	//Check for ++ or -- or ==
 	pointsData := extractPlusMinusEventData(m.Content)
 	if pointsData != nil {
@@ -65,6 +68,11 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 
 func handleQuack(s *discordgo.Session, m *discordgo.Message) {
 	s.ChannelMessageSend(m.ChannelID, "Quack!")
+	return
+}
+
+func handleIntune(s *discordgo.Session, m *discordgo.Message) {
+	s.ChannelMessageSend(m.ChannelID, "Its Intune not InTune!")
 	return
 }
 
