@@ -83,9 +83,9 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 
 	var plural string
 	if score == 1 {
-		plural = "Spooky Scary Skeleton"
+		plural = "piece of pie"
 	} else {
-		plural = "Spooky Scary Skeletons"
+		plural = "pieces of pie"
 	}
 	if user == nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d %[3]s", item, score, plural))
