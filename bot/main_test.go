@@ -138,7 +138,7 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 				test.isPublic,
 				loadPoints,
 				loadGuildName,
-				func(string, string) (bool, error) { return true, nil },
+				func(string) (map[string]struct{}, error) { return nil, nil },
 				newLeaderboardResponseCache(),
 			).ServeHTTP(response, request)
 
@@ -178,7 +178,7 @@ func TestCachedLeaderboardStillChecksVisibility(t *testing.T) {
 			return []PointItem{{Item: "DUCK", Points: 5}}, nil
 		},
 		func(string) (string, error) { return "Windows Admins", nil },
-		func(string, string) (bool, error) { return true, nil },
+		func(string) (map[string]struct{}, error) { return nil, nil },
 		newLeaderboardResponseCache(),
 	)
 	request := httptest.NewRequest(http.MethodGet, "/guild/618712310185197588/things", nil)
@@ -217,8 +217,8 @@ func TestGuildMemberLeaderboardExcludesDepartedUsers(t *testing.T) {
 			}, nil
 		},
 		func(string) (string, error) { return "Windows Admins", nil },
-		func(_ string, userID string) (bool, error) {
-			return userID == "111111111111111111", nil
+		func(string) (map[string]struct{}, error) {
+			return map[string]struct{}{"111111111111111111": {}}, nil
 		},
 		newLeaderboardResponseCache(),
 	)
