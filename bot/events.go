@@ -43,6 +43,9 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		mentionMap[m.Mentions[i].ID] = true
 	}
 	if _, ok := mentionMap[s.State.User.ID]; ok {
+		if handleManagerCommand(s, m) {
+			return
+		}
 		if handleCounterCommand(s, m) {
 			return
 		}

@@ -15,7 +15,6 @@ const (
 	defaultCounterPlural   = "Loch Ness Geese"
 	counterConfigRow       = "COUNTER"
 	maxCounterNameLength   = 40
-	mainduckUserID         = "281125480072085515"
 )
 
 type counterConfig struct {
@@ -139,21 +138,6 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 
 	sendBotMessage(s, m.ChannelID, fmt.Sprintf("Counter updated to `%s` / `%s`.", counter.Singular, counter.Plural))
 	return true
-}
-
-func canManageGuildSettings(s *discordgo.Session, m *discordgo.Message) (bool, error) {
-	if m.Author.ID == mainduckUserID {
-		return true, nil
-	}
-	if m.GuildID == "" {
-		return false, nil
-	}
-
-	permissions, err := s.UserChannelPermissions(m.Author.ID, m.ChannelID)
-	if err != nil {
-		return false, err
-	}
-	return permissions&discordgo.PermissionAdministrator != 0, nil
 }
 
 func sendBotMessage(s *discordgo.Session, channelID string, content string) {
