@@ -81,6 +81,22 @@ func guildHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(json))
 }
 
+func allowDuckPointsCORS(next http.Handler) http.Handler {
+	allowedOrigins := map[string]bool{
+		"https://duckpoints.com":     true,
+		"https://www.duckpoints.com": true,
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func runSite() {
 	router := mux.NewRouter()
 	router.HandleFunc("/guild/{guild}/{type}", guildHandler)
@@ -89,7 +105,7 @@ func runSite() {
 		port = "3000"
 	}
 	srv := &http.Server{
-		Handler: router,
+		Handler: allowDuckPointsCORS(router),
 		Addr:    fmt.Sprintf("0.0.0.0:%[1]s", port),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
