@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -109,38 +108,33 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 }
 
 func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
-	public, err := isGuildLeaderboardPublic(m.GuildID)
+	guildName, err := discordGuildName(s, m.GuildID)
 	if err != nil {
-		fmt.Printf("Unable to load leaderboard visibility for guild %s: %s\n", m.GuildID, err)
-		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard setting.")
-		return
-	}
-	if !public {
-		sendBotMessage(s, m.ChannelID, "This server's leaderboard is private.")
-		return
+		fmt.Printf("Unable to load Discord name for guild %s: %s\n", m.GuildID, err)
+		guildName = "this server"
 	}
 
-	println("Printing Leaderboard for " + m.Author.Username)
-	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		URL:         "",
-		Type:        discordgo.EmbedTypeRich,
-		Title:       "",
-		Description: "Here are the leaderboards!",
-		Timestamp:   time.Now().Local().String(),
-		Color:       0,
-		Footer:      &discordgo.MessageEmbedFooter{IconURL: m.Author.AvatarURL(""), Text: fmt.Sprintf("Invoked by %s", m.Author.Username)},
-		Image:       &discordgo.MessageEmbedImage{},
-		Thumbnail:   &discordgo.MessageEmbedThumbnail{},
-		Video:       &discordgo.MessageEmbedVideo{},
-		Provider:    &discordgo.MessageEmbedProvider{},
-		Author:      &discordgo.MessageEmbedAuthor{},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Leaderboard",
-				Value:  fmt.Sprintf("[View leaderboard](https://duckpoints.com/leaderboard.html?guild=%s)", m.GuildID),
-				Inline: true,
-			},
-		},
-	},
+	public, visibilityErr := isGuildLeaderboardPublic(m.GuildID)
+	if visibilityErr != nil {
+		fmt.Printf("Unable to load leaderboard visibility for guild %s: %s\n", m.GuildID, visibilityErr)
+		public = false
+	}
+
+	embed := buildLeaderboardEmbed(
+		m.GuildID,
+		guildName,
+		getTopInGuild(m.GuildID, false),
+		getTopInGuild(m.GuildID, true),
+		public,
+		m.Author,
 	)
+	_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Embed: embed,
+		AllowedMentions: &discordgo.MessageAllowedMentions{
+			Parse: []discordgo.AllowedMentionType{},
+		},
+	})
+	if err != nil {
+		fmt.Printf("Unable to send leaderboard response to channel %s: %s\n", m.ChannelID, err)
+	}
 }
