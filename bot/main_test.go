@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 func TestAllowDuckPointsCORS(t *testing.T) {
@@ -44,5 +47,91 @@ func TestAllowDuckPointsCORS(t *testing.T) {
 				t.Fatalf("expected Access-Control-Allow-Origin %q, got %q", test.expectedOrigin, actual)
 			}
 		})
+	}
+}
+
+func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
+	tests := []struct {
+		name            string
+		guildID         string
+		leaderboardType string
+		isPublic        func(string) (bool, error)
+		expectedStatus  int
+		expectedBody    string
+	}{
+		{
+			name:            "public guild",
+			guildID:         "618712310185197588",
+			leaderboardType: "things",
+			isPublic: func(string) (bool, error) {
+				return true, nil
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `[{"item":"DUCK","points":5,"isUser":false}]`,
+		},
+		{
+			name:            "private guild",
+			guildID:         "618712310185197588",
+			leaderboardType: "things",
+			isPublic: func(string) (bool, error) {
+				return false, nil
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:            "visibility storage error",
+			guildID:         "618712310185197588",
+			leaderboardType: "members",
+			isPublic: func(string) (bool, error) {
+				return false, errors.New("storage unavailable")
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:            "invalid guild ID",
+			guildID:         "not-a-guild",
+			leaderboardType: "things",
+			isPublic: func(string) (bool, error) {
+				t.Fatal("visibility should not be checked for an invalid guild ID")
+				return false, nil
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/guild/"+test.guildID+"/"+test.leaderboardType, nil)
+			request = mux.SetURLVars(request, map[string]string{
+				"guild": test.guildID,
+				"type":  test.leaderboardType,
+			})
+			response := httptest.NewRecorder()
+			loadPoints := func(guildID string, getMembers bool) []PointItem {
+				return []PointItem{{Item: "DUCK", Points: 5, IsUser: getMembers}}
+			}
+
+			guildHandlerWithDependencies(test.isPublic, loadPoints).ServeHTTP(response, request)
+
+			if response.Code != test.expectedStatus {
+				t.Fatalf("status = %d, want %d", response.Code, test.expectedStatus)
+			}
+			if test.expectedBody != "" && response.Body.String() != test.expectedBody {
+				t.Errorf("body = %q, want %q", response.Body.String(), test.expectedBody)
+			}
+		})
+	}
+}
+
+func TestIsDiscordGuildID(t *testing.T) {
+	for _, guildID := range []string{"618712310185197588", "12345678901234567", "12345678901234567890"} {
+		if !isDiscordGuildID(guildID) {
+			t.Errorf("expected %q to be valid", guildID)
+		}
+	}
+	for _, guildID := range []string{"", "123", "not-a-guild", "1234567890123456x"} {
+		if isDiscordGuildID(guildID) {
+			t.Errorf("expected %q to be invalid", guildID)
+		}
 	}
 }

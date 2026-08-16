@@ -12,3 +12,16 @@ singular and plural counter names for their server:
 
 Use `@DuckBot counter` to show the current names or
 `@DuckBot counter reset` to restore `Loch Ness Goose` / `Loch Ness Geese`.
+
+## Public leaderboards
+
+Leaderboard API access is private by default. A server administrator or Mainduck can
+change the persisted visibility setting:
+
+```text
+@DuckBot leaderboard public
+@DuckBot leaderboard private
+@DuckBot leaderboard status
+```
+
+Private and unconfigured guilds return HTTP 404 from leaderboard API routes.

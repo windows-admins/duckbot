@@ -46,6 +46,9 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		if handleCounterCommand(s, m) {
 			return
 		}
+		if handleLeaderboardVisibilityCommand(s, m) {
+			return
+		}
 
 		println("Someone tagged me! I wonder if they want the LeaderBoard... ")
 		//Check for "LeaderBoard" with word boundaries
@@ -103,10 +106,17 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 }
 
 func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
-	// if item == m.Author.ID {
-	// 	s.ChannelMessageSend(m.ChannelID, "Really now? Don't try to steal points!")
-	// 	return
-	// }
+	public, err := isGuildLeaderboardPublic(m.GuildID)
+	if err != nil {
+		fmt.Printf("Unable to load leaderboard visibility for guild %s: %s\n", m.GuildID, err)
+		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard setting.")
+		return
+	}
+	if !public {
+		sendBotMessage(s, m.ChannelID, "This server's leaderboard is private.")
+		return
+	}
+
 	println("Printing Leaderboard for " + m.Author.Username)
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		URL:         "",
@@ -123,13 +133,8 @@ func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
 		Author:      &discordgo.MessageEmbedAuthor{},
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Users",
-				Value:  "[Leaderboard](https://duckbotdiscorduku6efjff3bps.azurewebsites.net/guild/618712310185197588/members)",
-				Inline: true,
-			},
-			{
-				Name:   "Things",
-				Value:  "[Leaderboard](https://duckbotdiscorduku6efjff3bps.azurewebsites.net/guild/618712310185197588/things)",
+				Name:   "Leaderboard",
+				Value:  fmt.Sprintf("[View leaderboard](https://duckpoints.com/leaderboard.html?guild=%s)", m.GuildID),
 				Inline: true,
 			},
 		},
