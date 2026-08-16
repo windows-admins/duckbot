@@ -36,3 +36,18 @@ Public leaderboard responses include the Discord guild ID and current guild name
   "items": []
 }
 ```
+
+## Guild manager role
+
+A server administrator or Mainduck can designate one role whose members may manage
+DuckBot's server-specific settings:
+
+```text
+@DuckBot manager @Role
+@DuckBot manager status
+@DuckBot manager reset
+```
+
+The configured manager role can change counter names and leaderboard visibility. It
+cannot designate or reset the manager role; that remains restricted to server
+administrators and Mainduck.

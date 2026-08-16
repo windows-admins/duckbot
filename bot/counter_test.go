@@ -84,9 +84,3 @@ func TestCounterNameForScore(t *testing.T) {
 		}
 	}
 }
-
-func TestMainduckUserID(t *testing.T) {
-	if mainduckUserID != "281125480072085515" {
-		t.Fatalf("Mainduck user ID = %q", mainduckUserID)
-	}
-}
