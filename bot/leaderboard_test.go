@@ -18,6 +18,7 @@ func TestParseLeaderboardVisibilityCommand(t *testing.T) {
 		content    string
 		wantAction string
 		wantPublic bool
+		wantEmoji  string
 		wantFound  bool
 		wantErr    bool
 	}{
@@ -43,6 +44,19 @@ func TestParseLeaderboardVisibilityCommand(t *testing.T) {
 			name:       "show status",
 			content:    "<@123> leaderboard status",
 			wantAction: "show",
+			wantFound:  true,
+		},
+		{
+			name:       "set winner emoji",
+			content:    "<@123> leaderboard emoji :duck:",
+			wantAction: "set-emoji",
+			wantEmoji:  ":duck:",
+			wantFound:  true,
+		},
+		{
+			name:       "reset winner emoji",
+			content:    "<@123> leaderboard emoji reset",
+			wantAction: "reset-emoji",
 			wantFound:  true,
 		},
 		{
@@ -73,6 +87,19 @@ func TestParseLeaderboardVisibilityCommand(t *testing.T) {
 			if command.Public != test.wantPublic {
 				t.Errorf("public = %t, want %t", command.Public, test.wantPublic)
 			}
+			if command.Emoji != test.wantEmoji {
+				t.Errorf("emoji = %q, want %q", command.Emoji, test.wantEmoji)
+			}
 		})
+	}
+}
+
+func TestLeaderboardWinnerEmojiDefaultsToHighHeel(t *testing.T) {
+	emoji, err := getGuildLeaderboardWinnerEmoji("")
+	if err != nil {
+		t.Fatalf("default winner emoji returned an error: %v", err)
+	}
+	if emoji != ":high_heel:" {
+		t.Fatalf("default winner emoji = %q", emoji)
 	}
 }

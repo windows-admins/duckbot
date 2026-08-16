@@ -15,7 +15,7 @@ const discordLeaderboardLimit = 10
 
 var discordEmojiPattern = regexp.MustCompile(`^<(a?):([A-Za-z0-9_]+):(\d{17,20})>?$`)
 
-func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem, members []PointItem, public bool, author *discordgo.User) *discordgo.MessageEmbed {
+func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem, members []PointItem, winnerEmoji string, public bool, author *discordgo.User) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Type:        discordgo.EmbedTypeRich,
 		Title:       "DuckBot Leaderboard",
@@ -25,12 +25,12 @@ func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Top Things",
-				Value:  formatLeaderboardEntries(things, false),
+				Value:  formatLeaderboardEntries(things, false, ""),
 				Inline: true,
 			},
 			{
 				Name:   "Top Members",
-				Value:  formatLeaderboardEntries(members, true),
+				Value:  formatLeaderboardEntries(members, true, winnerEmoji),
 				Inline: true,
 			},
 		},
@@ -49,7 +49,7 @@ func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem,
 	return embed
 }
 
-func formatLeaderboardEntries(entries []PointItem, members bool) string {
+func formatLeaderboardEntries(entries []PointItem, members bool, winnerEmoji string) string {
 	if len(entries) == 0 {
 		return "_No points yet._"
 	}
@@ -62,6 +62,9 @@ func formatLeaderboardEntries(entries []PointItem, members bool) string {
 	lines := make([]string, 0, limit)
 	for index, entry := range entries[:limit] {
 		name := formatLeaderboardName(entry.Item, members)
+		if members && index == 0 && winnerEmoji != "" {
+			name += " " + winnerEmoji
+		}
 		lines = append(lines, fmt.Sprintf("**%d.** %s — **%s**", index+1, name, formatPointTotal(entry.Points)))
 	}
 	return strings.Join(lines, "\n")

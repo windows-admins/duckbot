@@ -22,9 +22,12 @@ change the persisted visibility setting:
 @DuckBot leaderboard public
 @DuckBot leaderboard private
 @DuckBot leaderboard status
+@DuckBot leaderboard emoji :high_heel:
+@DuckBot leaderboard emoji reset
 ```
 
 Private and unconfigured guilds return HTTP 404 from leaderboard API routes.
+The first-ranked member uses a configurable emoji that defaults to `:high_heel:`.
 Public leaderboard responses include the Discord guild ID and current guild name:
 
 ```json

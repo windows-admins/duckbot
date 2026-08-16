@@ -119,12 +119,18 @@ func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
 		fmt.Printf("Unable to load leaderboard visibility for guild %s: %s\n", m.GuildID, visibilityErr)
 		public = false
 	}
+	winnerEmoji, emojiErr := getGuildLeaderboardWinnerEmoji(m.GuildID)
+	if emojiErr != nil {
+		fmt.Printf("Unable to load leaderboard winner emoji for guild %s: %s\n", m.GuildID, emojiErr)
+		winnerEmoji = defaultWinnerEmoji
+	}
 
 	embed := buildLeaderboardEmbed(
 		m.GuildID,
 		guildName,
 		getTopInGuild(m.GuildID, false),
 		getTopInGuild(m.GuildID, true),
+		winnerEmoji,
 		public,
 		m.Author,
 	)
