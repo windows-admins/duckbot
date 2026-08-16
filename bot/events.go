@@ -28,6 +28,10 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 	//Check for ++ or -- or ==
 	pointsData := extractPlusMinusEventData(m.Content)
 	if pointsData != nil {
+		if m.GuildID == "" {
+			sendBotMessage(s, m.ChannelID, "Points can only be changed inside a Discord server.")
+			return
+		}
 		item := pointsData[0]
 		operation := pointsData[1]
 		user, _ := s.User(item)
@@ -42,6 +46,10 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		mentionMap[m.Mentions[i].ID] = true
 	}
 	if _, ok := mentionMap[s.State.User.ID]; ok {
+		if m.GuildID == "" {
+			sendBotMessage(s, m.ChannelID, "DuckBot server settings and leaderboards are only available inside a Discord server.")
+			return
+		}
 		if handleManagerCommand(s, m) {
 			return
 		}
@@ -87,10 +95,16 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 	}
 	println("Updating Score for" + item)
 	var score int
+	var updateErr error
 	if user == nil {
-		score = updateScore(item, operation, m.GuildID, false)
+		score, updateErr = updateScore(item, operation, m.GuildID, false)
 	} else {
-		score = updateScore(item, operation, m.GuildID, true)
+		score, updateErr = updateScore(item, operation, m.GuildID, true)
+	}
+	if updateErr != nil {
+		fmt.Printf("Unable to update score for %s in guild %s: %s\n", item, m.GuildID, updateErr)
+		sendBotMessage(s, m.ChannelID, "I couldn't update that score. Please try again.")
+		return
 	}
 
 	counter, err := getCounter(m.GuildID)
@@ -128,11 +142,24 @@ func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
 		winnerEmoji = defaultWinnerEmoji
 	}
 
+	things, thingsErr := getTopInGuild(m.GuildID, false)
+	if thingsErr != nil {
+		fmt.Printf("Unable to load thing leaderboard for guild %s: %s\n", m.GuildID, thingsErr)
+		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard.")
+		return
+	}
+	members, membersErr := getTopInGuild(m.GuildID, true)
+	if membersErr != nil {
+		fmt.Printf("Unable to load member leaderboard for guild %s: %s\n", m.GuildID, membersErr)
+		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard.")
+		return
+	}
+
 	embed := buildLeaderboardEmbed(
 		m.GuildID,
 		guildName,
-		getTopInGuild(m.GuildID, false),
-		getTopInGuild(m.GuildID, true),
+		things,
+		members,
 		winnerEmoji,
 		public,
 		m.Author,

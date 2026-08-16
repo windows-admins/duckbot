@@ -118,11 +118,11 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 				"type":  test.leaderboardType,
 			})
 			response := httptest.NewRecorder()
-			loadPoints := func(guildID string, getMembers bool) []PointItem {
+			loadPoints := func(guildID string, getMembers bool) ([]PointItem, error) {
 				if test.expectedStatus != http.StatusOK {
 					t.Fatal("points must not be loaded when the request cannot be served")
 				}
-				return []PointItem{{Item: "DUCK", Points: 5, IsUser: getMembers}}
+				return []PointItem{{Item: "DUCK", Points: 5, IsUser: getMembers}}, nil
 			}
 			loadGuildName := func(guildID string) (string, error) {
 				if test.expectedStatus == http.StatusNotFound {
@@ -134,15 +134,69 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 				return "Windows Admins", nil
 			}
 
-			guildHandlerWithDependencies(test.isPublic, loadPoints, loadGuildName).ServeHTTP(response, request)
+			guildHandlerWithDependencies(test.isPublic, loadPoints, loadGuildName, newLeaderboardResponseCache()).ServeHTTP(response, request)
 
 			if response.Code != test.expectedStatus {
 				t.Fatalf("status = %d, want %d", response.Code, test.expectedStatus)
 			}
+
 			if test.expectedBody != "" && response.Body.String() != test.expectedBody {
 				t.Errorf("body = %q, want %q", response.Body.String(), test.expectedBody)
 			}
 		})
+	}
+}
+
+func TestCORSAlwaysVariesByOrigin(t *testing.T) {
+	handler := allowDuckPointsCORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set("Origin", "https://example.com")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if actual := response.Header().Get("Vary"); actual != "Origin" {
+		t.Fatalf("Vary = %q, want Origin", actual)
+	}
+}
+
+func TestCachedLeaderboardStillChecksVisibility(t *testing.T) {
+	public := true
+	loadCount := 0
+	handler := guildHandlerWithDependencies(
+		func(string) (bool, error) { return public, nil },
+		func(string, bool) ([]PointItem, error) {
+			loadCount++
+			return []PointItem{{Item: "DUCK", Points: 5}}, nil
+		},
+		func(string) (string, error) { return "Windows Admins", nil },
+		newLeaderboardResponseCache(),
+	)
+	request := httptest.NewRequest(http.MethodGet, "/guild/618712310185197588/things", nil)
+	request = mux.SetURLVars(request, map[string]string{
+		"guild": "618712310185197588",
+		"type":  "things",
+	})
+
+	firstResponse := httptest.NewRecorder()
+	handler.ServeHTTP(firstResponse, request)
+	if firstResponse.Code != http.StatusOK || loadCount != 1 {
+		t.Fatalf("first request status=%d loadCount=%d", firstResponse.Code, loadCount)
+	}
+
+	secondResponse := httptest.NewRecorder()
+	handler.ServeHTTP(secondResponse, request)
+	if secondResponse.Code != http.StatusOK || loadCount != 1 {
+		t.Fatalf("cached request status=%d loadCount=%d", secondResponse.Code, loadCount)
+	}
+
+	public = false
+	privateResponse := httptest.NewRecorder()
+	handler.ServeHTTP(privateResponse, request)
+	if privateResponse.Code != http.StatusNotFound {
+		t.Fatalf("private cached request status=%d, want 404", privateResponse.Code)
 	}
 }
 

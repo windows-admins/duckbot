@@ -176,7 +176,15 @@ func isGuildLeaderboardPublic(guildID string) (bool, error) {
 		return false, fmt.Errorf("get leaderboard config entity: %w", err)
 	}
 
-	public, ok := entity.Properties["Public"].(bool)
+	return leaderboardPublicProperty(entity.Properties)
+}
+
+func leaderboardPublicProperty(properties map[string]interface{}) (bool, error) {
+	publicValue := properties["Public"]
+	if publicValue == nil {
+		return defaultLeaderboardPublic, nil
+	}
+	public, ok := publicValue.(bool)
 	if !ok {
 		return false, errors.New("leaderboard config entity has invalid Public property")
 	}

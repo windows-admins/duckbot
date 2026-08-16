@@ -37,20 +37,11 @@
           "type": "string",
           "defaultValue": "https://index.docker.io"
       },
-      "dockerRegistryUsername" :{
-          "type": "string",
-          "defaultValue": ""
-      },
-      "dockerRegistryPassword" :{
-          "type": "string",
-          "defaultValue": ""
-      },
       "image": {
         "type": "string",
         "metadata": {
           "description": "Container image to deploy. Should be of the form accountName/imagename:tag for images stored in Docker Hub or a fully qualified URI for a private registry like the Azure Container Registry."
-        },
-        "defaultValue": "rowdychildren/duckbot3"
+        }
       }
     },
     "resources": [
@@ -100,7 +91,8 @@
             "dependsOn": [],
             "sku": {
                 "Tier": "[parameters('botservicesku')]",
-                "Name": "[parameters('botserviceskuname')]"
+                "Name": "[parameters('botserviceskuname')]",
+                "capacity": 1
             }
         },
     {
@@ -128,15 +120,6 @@
                           "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
                            "value": "false"
                      },
-                     {
-                           "name": "DOCKER_REGISTRY_SERVER_USERNAME",
-                           "value": "[parameters('dockerRegistryUsername')]"
-                      },
-                      
-                      {
-                            "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
-                            "value": "[parameters('dockerRegistryPassword')]"
-                      },
                       {
                              "name": "DUCKBOT_STORAGEACCOUNT_NAME",
                              "value": "[concat( parameters('deploymentName'), uniqueString(resourceGroup().id) )]"

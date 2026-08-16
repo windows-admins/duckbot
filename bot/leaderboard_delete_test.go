@@ -88,6 +88,31 @@ func TestIsStorageStatusSupportsValueErrors(t *testing.T) {
 	if !isStorageStatus(err, http.StatusNotFound) {
 		t.Fatal("expected Azure value error to match status")
 	}
+
+}
+
+func TestIsETagConflictSupportsSDKWrappedError(t *testing.T) {
+	if !isETagConflict(errors.New("Etag didn't match: storage service returned 412")) {
+		t.Fatal("expected SDK-wrapped ETag error to match")
+	}
+
+}
+
+func TestRetryStorageThrottling(t *testing.T) {
+	attempts := 0
+	err := retryStorageThrottling(func() error {
+		attempts++
+		if attempts < 3 {
+			return storage.AzureStorageServiceError{StatusCode: http.StatusTooManyRequests}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("retry returned an error: %v", err)
+	}
+	if attempts != 3 {
+		t.Fatalf("attempts = %d, want 3", attempts)
+	}
 }
 
 func TestNormalizeLeaderboardItem(t *testing.T) {
@@ -108,6 +133,7 @@ func TestPendingLeaderboardDeletionExpiry(t *testing.T) {
 	now := time.Now().UTC()
 	pending := pendingLeaderboardDeletion{
 		Item:      "BEANS",
+		ETag:      "W/\"datetime'2026-08-15T00%3A00%3A00Z'\"",
 		ExpiresAt: now.Add(leaderboardDeleteTimeout),
 	}
 	if !now.Before(pending.ExpiresAt) {
