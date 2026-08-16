@@ -15,6 +15,7 @@ const (
 	defaultCounterPlural   = "Loch Ness Geese"
 	counterConfigRow       = "COUNTER"
 	maxCounterNameLength   = 40
+	counterOwnerUserID     = "281125480072085515"
 )
 
 type counterConfig struct {
@@ -122,7 +123,7 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 		return true
 	}
 	if !authorized {
-		sendCounterMessage(s, m.ChannelID, "Only server administrators and mainduck can customize the counter.")
+		sendCounterMessage(s, m.ChannelID, "Only server administrators and the DuckBot owner can customize the counter.")
 		return true
 	}
 
@@ -141,7 +142,7 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 }
 
 func canCustomizeCounter(s *discordgo.Session, m *discordgo.Message) (bool, error) {
-	if strings.EqualFold(m.Author.Username, "mainduck") {
+	if m.Author.ID == counterOwnerUserID {
 		return true, nil
 	}
 	if m.GuildID == "" {

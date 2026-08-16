@@ -3,7 +3,7 @@ Build Status: [![Build Status](https://dev.azure.com/duckbot3/duckbot3/_apis/bui
 
 ## Custom counters
 
-Server administrators and the Discord user named `mainduck` can customize the
+Server administrators and Discord user `281125480072085515` can customize the
 singular and plural counter names for their server:
 
 ```text

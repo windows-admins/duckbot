@@ -84,3 +84,9 @@ func TestCounterNameForScore(t *testing.T) {
 		}
 	}
 }
+
+func TestCounterOwnerUserID(t *testing.T) {
+	if counterOwnerUserID != "281125480072085515" {
+		t.Fatalf("counter owner ID = %q", counterOwnerUserID)
+	}
+}
