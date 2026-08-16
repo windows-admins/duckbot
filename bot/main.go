@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -36,6 +37,16 @@ type PointItem struct {
 	IsUser bool    `json:"isUser"`
 }
 
+type GuildSummary struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type GuildLeaderboardResponse struct {
+	Guild GuildSummary `json:"guild"`
+	Items []PointItem  `json:"items"`
+}
+
 func main() {
 	dg, err := discordgo.New("Bot " + discordToken)
 	if err != nil {
@@ -49,7 +60,7 @@ func main() {
 	}
 	go discordListener(dg)
 	fmt.Println("Bot is now running.")
-	go runSite()
+	go runSite(dg)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
@@ -66,12 +77,15 @@ func discordListener(dg *discordgo.Session) {
 
 type guildVisibilityChecker func(string) (bool, error)
 type guildPointsLoader func(string, bool) []PointItem
+type guildNameLoader func(string) (string, error)
 
-func guildHandler(w http.ResponseWriter, r *http.Request) {
-	guildHandlerWithDependencies(isGuildLeaderboardPublic, getTopInGuild).ServeHTTP(w, r)
+func guildHandler(session *discordgo.Session) http.HandlerFunc {
+	return guildHandlerWithDependencies(isGuildLeaderboardPublic, getTopInGuild, func(guildID string) (string, error) {
+		return discordGuildName(session, guildID)
+	})
 }
 
-func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints guildPointsLoader) http.HandlerFunc {
+func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints guildPointsLoader, loadGuildName guildNameLoader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var getMembers bool
 		vars := mux.Vars(r)
@@ -101,8 +115,21 @@ func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints gu
 			return
 		}
 
+		guildName, err := loadGuildName(guildID)
+		if err != nil {
+			log.Printf("Unable to load Discord name for guild %s: %s", guildID, err)
+			http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
+			return
+		}
+
 		list := loadPoints(guildID, getMembers)
-		response, err := json.Marshal(list)
+		response, err := json.Marshal(GuildLeaderboardResponse{
+			Guild: GuildSummary{
+				ID:   guildID,
+				Name: guildName,
+			},
+			Items: list,
+		})
 		if err != nil {
 			log.Printf("Unable to encode leaderboard for guild %s: %s", guildID, err)
 			http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
@@ -111,6 +138,22 @@ func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints gu
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 	}
+}
+
+func discordGuildName(session *discordgo.Session, guildID string) (string, error) {
+	guild, err := session.State.Guild(guildID)
+	if err != nil {
+		guild, err = session.Guild(guildID)
+	}
+	if err != nil {
+		return "", fmt.Errorf("get Discord guild: %w", err)
+	}
+
+	name := strings.TrimSpace(guild.Name)
+	if name == "" {
+		return "", fmt.Errorf("Discord guild %s has no name", guildID)
+	}
+	return name, nil
 }
 
 func isDiscordGuildID(guildID string) bool {
@@ -141,9 +184,9 @@ func allowDuckPointsCORS(next http.Handler) http.Handler {
 	})
 }
 
-func runSite() {
+func runSite(session *discordgo.Session) {
 	router := mux.NewRouter()
-	router.HandleFunc("/guild/{guild}/{type}", guildHandler)
+	router.HandleFunc("/guild/{guild}/{type}", guildHandler(session))
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"

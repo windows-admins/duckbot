@@ -56,6 +56,7 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 		guildID         string
 		leaderboardType string
 		isPublic        func(string) (bool, error)
+		guildNameError  error
 		expectedStatus  int
 		expectedBody    string
 	}{
@@ -67,7 +68,7 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 				return true, nil
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   `[{"item":"DUCK","points":5,"isUser":false}]`,
+			expectedBody:   `{"guild":{"id":"618712310185197588","name":"Windows Admins"},"items":[{"item":"DUCK","points":5,"isUser":false}]}`,
 		},
 		{
 			name:            "private guild",
@@ -85,6 +86,16 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 			isPublic: func(string) (bool, error) {
 				return false, errors.New("storage unavailable")
 			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:            "Discord guild lookup error",
+			guildID:         "618712310185197588",
+			leaderboardType: "things",
+			isPublic: func(string) (bool, error) {
+				return true, nil
+			},
+			guildNameError: errors.New("Discord unavailable"),
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -108,10 +119,22 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 			})
 			response := httptest.NewRecorder()
 			loadPoints := func(guildID string, getMembers bool) []PointItem {
+				if test.expectedStatus != http.StatusOK {
+					t.Fatal("points must not be loaded when the request cannot be served")
+				}
 				return []PointItem{{Item: "DUCK", Points: 5, IsUser: getMembers}}
 			}
+			loadGuildName := func(guildID string) (string, error) {
+				if test.expectedStatus == http.StatusNotFound {
+					t.Fatal("guild name must not be loaded for private or invalid guilds")
+				}
+				if test.guildNameError != nil {
+					return "", test.guildNameError
+				}
+				return "Windows Admins", nil
+			}
 
-			guildHandlerWithDependencies(test.isPublic, loadPoints).ServeHTTP(response, request)
+			guildHandlerWithDependencies(test.isPublic, loadPoints, loadGuildName).ServeHTTP(response, request)
 
 			if response.Code != test.expectedStatus {
 				t.Fatalf("status = %d, want %d", response.Code, test.expectedStatus)
