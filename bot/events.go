@@ -154,14 +154,13 @@ func handleLeaderboard(s *discordgo.Session, m *discordgo.Message) {
 		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard.")
 		return
 	}
-	members, membersErr = filterCurrentGuildMembers(m.GuildID, members, func(guildID string, userID string) (bool, error) {
-		return discordGuildMemberExists(s, guildID, userID)
-	})
+	memberIDs, membersErr := discordGuildMemberIDs(s, m.GuildID)
 	if membersErr != nil {
 		fmt.Printf("Unable to verify leaderboard members for guild %s: %s\n", m.GuildID, membersErr)
 		sendBotMessage(s, m.ChannelID, "I couldn't load this server's leaderboard.")
 		return
 	}
+	members = filterCurrentGuildMembers(members, memberIDs)
 
 	embed := buildLeaderboardEmbed(
 		m.GuildID,
