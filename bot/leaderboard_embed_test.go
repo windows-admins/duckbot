@@ -77,7 +77,7 @@ func TestBuildLeaderboardEmbedPublicLink(t *testing.T) {
 	}
 }
 
-func TestBuildLeaderboardEmbedIncludesWorstMembers(t *testing.T) {
+func TestBuildLeaderboardEmbedIncludesOnlyWorstThings(t *testing.T) {
 	things := []PointItem{
 		{Item: "BEANS", Points: 12},
 		{Item: "EDGE", Points: -10},
@@ -88,8 +88,8 @@ func TestBuildLeaderboardEmbedIncludesWorstMembers(t *testing.T) {
 	}
 
 	embed := buildLeaderboardEmbed("618712310185197588", "WinAdmins", things, members, defaultWinnerEmoji, false, nil)
-	if len(embed.Fields) != 5 {
-		t.Fatalf("embed has %d fields, want 5", len(embed.Fields))
+	if len(embed.Fields) != 4 {
+		t.Fatalf("embed has %d fields, want 4", len(embed.Fields))
 	}
 	if embed.Fields[2].Inline || embed.Fields[2].Name != "\u200b" || embed.Fields[2].Value != "\u200b" {
 		t.Fatalf("leaderboard row break is invalid: %#v", embed.Fields[2])
@@ -99,11 +99,5 @@ func TestBuildLeaderboardEmbedIncludesWorstMembers(t *testing.T) {
 	}
 	if !strings.HasPrefix(embed.Fields[3].Value, "**2.** EDGE — **-10**") {
 		t.Errorf("bottom things did not start with the worst item: %q", embed.Fields[3].Value)
-	}
-	if embed.Fields[4].Name != "Worst of the Worst: Members" {
-		t.Fatalf("bottom members field name = %q", embed.Fields[4].Name)
-	}
-	if !strings.HasPrefix(embed.Fields[4].Value, "**2.** <@618712310185197588> — **-5**") {
-		t.Errorf("bottom members did not start with the worst member: %q", embed.Fields[4].Value)
 	}
 }

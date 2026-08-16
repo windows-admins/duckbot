@@ -43,11 +43,6 @@ func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem,
 				Value:  formatBottomLeaderboardEntries(things, false),
 				Inline: true,
 			},
-			{
-				Name:   "Worst of the Worst: Members",
-				Value:  formatBottomLeaderboardEntries(members, true),
-				Inline: true,
-			},
 		},
 	}
 
