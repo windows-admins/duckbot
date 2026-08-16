@@ -43,6 +43,10 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		mentionMap[m.Mentions[i].ID] = true
 	}
 	if _, ok := mentionMap[s.State.User.ID]; ok {
+		if handleCounterCommand(s, m) {
+			return
+		}
+
 		println("Someone tagged me! I wonder if they want the LeaderBoard... ")
 		//Check for "LeaderBoard" with word boundaries
 		leaderboardMatch, _ := regexp.MatchString(".*\\bLEADERBOARD\\b.*", strings.ToUpper(m.Content))
@@ -81,19 +85,19 @@ func handlePlusMinus(item string, operation string, s *discordgo.Session, m *dis
 		score = updateScore(item, operation, m.GuildID, true)
 	}
 
-	var plural string
-	if score == 1 {
-		plural = "Loch Ness Goose"
-	} else {
-		plural = "Loch Ness Geese"
+	counter, err := getCounter(m.GuildID)
+	if err != nil {
+		fmt.Printf("Unable to load counter for guild %s: %s\n", m.GuildID, err)
+		counter = defaultCounter()
 	}
+	counterName := counterNameForScore(counter, score)
 	if user == nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d %[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%[1]s has %[2]d %[3]s", item, score, counterName))
 		if strings.ToUpper(item) == "SPINNYGORILLA" {
 			s.ChannelMessageSend(m.ChannelID, "https://giphy.com/gifs/afvpets-afv-gorilla-KPgOYtIRnFOOk")
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d %[3]s", item, score, plural))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@%[1]s> has %[2]d %[3]s", item, score, counterName))
 	}
 
 }
