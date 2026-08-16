@@ -25,3 +25,14 @@ change the persisted visibility setting:
 ```
 
 Private and unconfigured guilds return HTTP 404 from leaderboard API routes.
+Public leaderboard responses include the Discord guild ID and current guild name:
+
+```json
+{
+  "guild": {
+    "id": "618712310185197588",
+    "name": "Windows Admins"
+  },
+  "items": []
+}
+```
