@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -9,7 +10,27 @@ import (
 const discordGuildMembersPageSize = 1000
 
 type guildMemberIDLoader func(string) (map[string]struct{}, error)
+type guildMemberChecker func(string, string) (bool, error)
 type discordGuildMembersPageLoader func(string, string, int) ([]*discordgo.Member, error)
+
+func discordGuildMemberExists(session *discordgo.Session, guildID string, userID string) (bool, error) {
+	if !isDiscordSnowflake(userID) {
+		return false, nil
+	}
+
+	member, err := session.GuildMember(guildID, userID)
+	if err == nil {
+		return member != nil, nil
+	}
+
+	var restErr *discordgo.RESTError
+	if errors.As(err, &restErr) &&
+		restErr.Message != nil &&
+		restErr.Message.Code == discordgo.ErrCodeUnknownMember {
+		return false, nil
+	}
+	return false, fmt.Errorf("get Discord guild member %s: %w", userID, err)
+}
 
 func discordGuildMemberIDs(session *discordgo.Session, guildID string) (map[string]struct{}, error) {
 	return loadDiscordGuildMemberIDs(guildID, session.GuildMembers)
@@ -61,4 +82,21 @@ func filterCurrentGuildMembers(entries []PointItem, memberIDs map[string]struct{
 		}
 	}
 	return filtered
+}
+
+func filterTopCurrentGuildMembers(guildID string, entries []PointItem, limit int, memberExists guildMemberChecker) ([]PointItem, error) {
+	filtered := make([]PointItem, 0, limit)
+	for _, entry := range entries {
+		exists, err := memberExists(guildID, entry.Item)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			filtered = append(filtered, entry)
+			if len(filtered) == limit {
+				break
+			}
+		}
+	}
+	return filtered, nil
 }
