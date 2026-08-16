@@ -15,7 +15,7 @@ const (
 	defaultCounterPlural   = "Loch Ness Geese"
 	counterConfigRow       = "COUNTER"
 	maxCounterNameLength   = 40
-	counterOwnerUserID     = "281125480072085515"
+	mainduckUserID         = "281125480072085515"
 )
 
 type counterConfig struct {
@@ -101,7 +101,7 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 		return false
 	}
 	if err != nil {
-		sendCounterMessage(s, m.ChannelID, fmt.Sprintf("%s. Usage: `@DuckBot counter singular | plural`", err))
+		sendBotMessage(s, m.ChannelID, fmt.Sprintf("%s. Usage: `@DuckBot counter singular | plural`", err))
 		return true
 	}
 
@@ -109,21 +109,21 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 		counter, getErr := getCounter(m.GuildID)
 		if getErr != nil {
 			fmt.Printf("Unable to load counter for guild %s: %s\n", m.GuildID, getErr)
-			sendCounterMessage(s, m.ChannelID, "I couldn't load this server's counter.")
+			sendBotMessage(s, m.ChannelID, "I couldn't load this server's counter.")
 			return true
 		}
-		sendCounterMessage(s, m.ChannelID, fmt.Sprintf("This server's counter is `%s` / `%s`.", counter.Singular, counter.Plural))
+		sendBotMessage(s, m.ChannelID, fmt.Sprintf("This server's counter is `%s` / `%s`.", counter.Singular, counter.Plural))
 		return true
 	}
 
-	authorized, permissionErr := canCustomizeCounter(s, m)
+	authorized, permissionErr := canManageGuildSettings(s, m)
 	if permissionErr != nil {
 		fmt.Printf("Unable to check counter permissions for user %s in guild %s: %s\n", m.Author.ID, m.GuildID, permissionErr)
-		sendCounterMessage(s, m.ChannelID, "I couldn't verify your server permissions.")
+		sendBotMessage(s, m.ChannelID, "I couldn't verify your server permissions.")
 		return true
 	}
 	if !authorized {
-		sendCounterMessage(s, m.ChannelID, "Only server administrators and the DuckBot owner can customize the counter.")
+		sendBotMessage(s, m.ChannelID, "Only server administrators and the DuckBot owner can customize the counter.")
 		return true
 	}
 
@@ -133,16 +133,16 @@ func handleCounterCommand(s *discordgo.Session, m *discordgo.Message) bool {
 	}
 	if saveErr := saveCounter(m.GuildID, counter); saveErr != nil {
 		fmt.Printf("Unable to save counter for guild %s: %s\n", m.GuildID, saveErr)
-		sendCounterMessage(s, m.ChannelID, "I couldn't save this server's counter.")
+		sendBotMessage(s, m.ChannelID, "I couldn't save this server's counter.")
 		return true
 	}
 
-	sendCounterMessage(s, m.ChannelID, fmt.Sprintf("Counter updated to `%s` / `%s`.", counter.Singular, counter.Plural))
+	sendBotMessage(s, m.ChannelID, fmt.Sprintf("Counter updated to `%s` / `%s`.", counter.Singular, counter.Plural))
 	return true
 }
 
-func canCustomizeCounter(s *discordgo.Session, m *discordgo.Message) (bool, error) {
-	if m.Author.ID == counterOwnerUserID {
+func canManageGuildSettings(s *discordgo.Session, m *discordgo.Message) (bool, error) {
+	if m.Author.ID == mainduckUserID {
 		return true, nil
 	}
 	if m.GuildID == "" {
@@ -156,7 +156,7 @@ func canCustomizeCounter(s *discordgo.Session, m *discordgo.Message) (bool, erro
 	return permissions&discordgo.PermissionAdministrator != 0, nil
 }
 
-func sendCounterMessage(s *discordgo.Session, channelID string, content string) {
+func sendBotMessage(s *discordgo.Session, channelID string, content string) {
 	_, err := s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
 		Content: content,
 		AllowedMentions: &discordgo.MessageAllowedMentions{
@@ -164,7 +164,7 @@ func sendCounterMessage(s *discordgo.Session, channelID string, content string) 
 		},
 	})
 	if err != nil {
-		fmt.Printf("Unable to send counter response to channel %s: %s\n", channelID, err)
+		fmt.Printf("Unable to send bot response to channel %s: %s\n", channelID, err)
 	}
 }
 

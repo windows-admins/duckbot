@@ -64,21 +64,65 @@ func discordListener(dg *discordgo.Session) {
 
 }
 
+type guildVisibilityChecker func(string) (bool, error)
+type guildPointsLoader func(string, bool) []PointItem
+
 func guildHandler(w http.ResponseWriter, r *http.Request) {
-	var getMembers bool
-	vars := mux.Vars(r)
-	if vars["type"] == "members" {
-		getMembers = true
-	} else if vars["type"] == "things" {
-		getMembers = false
-	} else {
-		http.NotFound(w, r)
-		return
+	guildHandlerWithDependencies(isGuildLeaderboardPublic, getTopInGuild).ServeHTTP(w, r)
+}
+
+func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints guildPointsLoader) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var getMembers bool
+		vars := mux.Vars(r)
+		if vars["type"] == "members" {
+			getMembers = true
+		} else if vars["type"] == "things" {
+			getMembers = false
+		} else {
+			http.NotFound(w, r)
+			return
+		}
+
+		guildID := vars["guild"]
+		if !isDiscordGuildID(guildID) {
+			http.NotFound(w, r)
+			return
+		}
+
+		public, err := isPublic(guildID)
+		if err != nil {
+			log.Printf("Unable to check leaderboard visibility for guild %s: %s", guildID, err)
+			http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
+			return
+		}
+		if !public {
+			http.NotFound(w, r)
+			return
+		}
+
+		list := loadPoints(guildID, getMembers)
+		response, err := json.Marshal(list)
+		if err != nil {
+			log.Printf("Unable to encode leaderboard for guild %s: %s", guildID, err)
+			http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(response)
 	}
-	list := getTopInGuild(vars["guild"], getMembers)
-	json, _ := json.Marshal(list)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(json))
+}
+
+func isDiscordGuildID(guildID string) bool {
+	if len(guildID) < 17 || len(guildID) > 20 {
+		return false
+	}
+	for _, character := range guildID {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func allowDuckPointsCORS(next http.Handler) http.Handler {
