@@ -134,7 +134,13 @@ func TestGuildHandlerRequiresPublicGuild(t *testing.T) {
 				return "Windows Admins", nil
 			}
 
-			guildHandlerWithDependencies(test.isPublic, loadPoints, loadGuildName, newLeaderboardResponseCache()).ServeHTTP(response, request)
+			guildHandlerWithDependencies(
+				test.isPublic,
+				loadPoints,
+				loadGuildName,
+				func(string, string) (bool, error) { return true, nil },
+				newLeaderboardResponseCache(),
+			).ServeHTTP(response, request)
 
 			if response.Code != test.expectedStatus {
 				t.Fatalf("status = %d, want %d", response.Code, test.expectedStatus)
@@ -172,6 +178,7 @@ func TestCachedLeaderboardStillChecksVisibility(t *testing.T) {
 			return []PointItem{{Item: "DUCK", Points: 5}}, nil
 		},
 		func(string) (string, error) { return "Windows Admins", nil },
+		func(string, string) (bool, error) { return true, nil },
 		newLeaderboardResponseCache(),
 	)
 	request := httptest.NewRequest(http.MethodGet, "/guild/618712310185197588/things", nil)
@@ -197,6 +204,39 @@ func TestCachedLeaderboardStillChecksVisibility(t *testing.T) {
 	handler.ServeHTTP(privateResponse, request)
 	if privateResponse.Code != http.StatusNotFound {
 		t.Fatalf("private cached request status=%d, want 404", privateResponse.Code)
+	}
+}
+
+func TestGuildMemberLeaderboardExcludesDepartedUsers(t *testing.T) {
+	handler := guildHandlerWithDependencies(
+		func(string) (bool, error) { return true, nil },
+		func(string, bool) ([]PointItem, error) {
+			return []PointItem{
+				{Item: "111111111111111111", Points: 5, IsUser: true},
+				{Item: "222222222222222222", Points: 3, IsUser: true},
+			}, nil
+		},
+		func(string) (string, error) { return "Windows Admins", nil },
+		func(_ string, userID string) (bool, error) {
+			return userID == "111111111111111111", nil
+		},
+		newLeaderboardResponseCache(),
+	)
+	request := httptest.NewRequest(http.MethodGet, "/guild/618712310185197588/members", nil)
+	request = mux.SetURLVars(request, map[string]string{
+		"guild": "618712310185197588",
+		"type":  "members",
+	})
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", response.Code)
+	}
+	expected := `{"guild":{"id":"618712310185197588","name":"Windows Admins"},"items":[{"item":"111111111111111111","points":5,"isUser":true}]}`
+	if response.Body.String() != expected {
+		t.Fatalf("body = %q, want %q", response.Body.String(), expected)
 	}
 }
 

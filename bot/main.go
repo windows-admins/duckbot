@@ -84,10 +84,12 @@ var apiLeaderboardCache = newLeaderboardResponseCache()
 func guildHandler(session *discordgo.Session) http.HandlerFunc {
 	return guildHandlerWithDependencies(isGuildLeaderboardPublic, getTopInGuild, func(guildID string) (string, error) {
 		return discordGuildName(session, guildID)
+	}, func(guildID string, userID string) (bool, error) {
+		return discordGuildMemberExists(session, guildID, userID)
 	}, apiLeaderboardCache)
 }
 
-func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints guildPointsLoader, loadGuildName guildNameLoader, cache *leaderboardResponseCache) http.HandlerFunc {
+func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints guildPointsLoader, loadGuildName guildNameLoader, memberExists guildMemberChecker, cache *leaderboardResponseCache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var getMembers bool
 		vars := mux.Vars(r)
@@ -137,6 +139,14 @@ func guildHandlerWithDependencies(isPublic guildVisibilityChecker, loadPoints gu
 			log.Printf("Unable to load leaderboard for guild %s: %s", guildID, loadErr)
 			http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
 			return
+		}
+		if getMembers {
+			list, loadErr = filterCurrentGuildMembers(guildID, list, memberExists)
+			if loadErr != nil {
+				log.Printf("Unable to verify leaderboard members for guild %s: %s", guildID, loadErr)
+				http.Error(w, "Unable to load leaderboard.", http.StatusInternalServerError)
+				return
+			}
 		}
 		response, err := json.Marshal(GuildLeaderboardResponse{
 			Guild: GuildSummary{
