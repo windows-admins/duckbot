@@ -33,6 +33,16 @@ func buildLeaderboardEmbed(guildID string, guildName string, things []PointItem,
 				Value:  formatLeaderboardEntries(members, true, winnerEmoji),
 				Inline: true,
 			},
+			{
+				Name:   "Worst of the Worst: Things",
+				Value:  formatBottomLeaderboardEntries(things, false),
+				Inline: true,
+			},
+			{
+				Name:   "Worst of the Worst: Members",
+				Value:  formatBottomLeaderboardEntries(members, true),
+				Inline: true,
+			},
 		},
 	}
 
@@ -66,6 +76,29 @@ func formatLeaderboardEntries(entries []PointItem, members bool, winnerEmoji str
 			name += " " + winnerEmoji
 		}
 		lines = append(lines, fmt.Sprintf("**%d.** %s — **%s**", index+1, name, formatPointTotal(entry.Points)))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func formatBottomLeaderboardEntries(entries []PointItem, members bool) string {
+	if len(entries) == 0 {
+		return "_No points yet._"
+	}
+
+	start := len(entries) - discordLeaderboardLimit
+	if start < 0 {
+		start = 0
+	}
+
+	lines := make([]string, 0, len(entries)-start)
+	for index := len(entries) - 1; index >= start; index-- {
+		entry := entries[index]
+		lines = append(lines, fmt.Sprintf(
+			"**%d.** %s — **%s**",
+			index+1,
+			formatLeaderboardName(entry.Item, members),
+			formatPointTotal(entry.Points),
+		))
 	}
 	return strings.Join(lines, "\n")
 }
