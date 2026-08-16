@@ -37,6 +37,14 @@ with a persisted five-minute confirmation:
 @DuckBot leaderboard confirm-delete
 @DuckBot leaderboard cancel-delete
 ```
+
+## Production deployment
+
+DuckBot must run with exactly one App Service worker because every connected process
+receives Discord gateway events. The ARM template fixes the App Service Plan capacity
+at one worker. Main builds publish both a versioned container and a convenience
+`latest` tag. Deployments must use the generated `deploy.parameters.json`, which pins
+the exact versioned image produced by that build.
 Public leaderboard responses include the Discord guild ID and current guild name:
 
 ```json

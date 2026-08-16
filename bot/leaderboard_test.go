@@ -99,7 +99,21 @@ func TestLeaderboardWinnerEmojiDefaultsToHighHeel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("default winner emoji returned an error: %v", err)
 	}
+
 	if emoji != ":high_heel:" {
 		t.Fatalf("default winner emoji = %q", emoji)
+	}
+}
+
+func TestMissingPublicPropertyDefaultsToPrivate(t *testing.T) {
+	public, err := leaderboardPublicProperty(map[string]interface{}{"WinnerEmoji": ":duck:"})
+	if err != nil {
+		t.Fatalf("missing Public property returned an error: %v", err)
+	}
+	if public {
+		t.Fatal("missing Public property did not default to private")
+	}
+	if _, err := leaderboardPublicProperty(map[string]interface{}{"Public": "true"}); err == nil {
+		t.Fatal("invalid Public property type did not fail")
 	}
 }

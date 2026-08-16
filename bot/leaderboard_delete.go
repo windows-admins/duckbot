@@ -18,6 +18,7 @@ const (
 
 var (
 	errLeaderboardItemNotFound = errors.New("leaderboard item not found")
+	errLeaderboardItemChanged  = errors.New("leaderboard item changed")
 	errNoPendingDeletion       = errors.New("no pending leaderboard deletion")
 )
 
@@ -28,7 +29,13 @@ type leaderboardDeleteCommand struct {
 
 type pendingLeaderboardDeletion struct {
 	Item      string
+	ETag      string
 	ExpiresAt time.Time
+}
+
+type leaderboardThingSnapshot struct {
+	PointItem
+	ETag string
 }
 
 func parseLeaderboardDeleteCommand(content string, botID string) (leaderboardDeleteCommand, bool, error) {
@@ -106,6 +113,7 @@ func handleLeaderboardDeleteCommand(s *discordgo.Session, m *discordgo.Message) 
 
 		pending := pendingLeaderboardDeletion{
 			Item:      item.Item,
+			ETag:      item.ETag,
 			ExpiresAt: time.Now().UTC().Add(leaderboardDeleteTimeout),
 		}
 		if saveErr := savePendingLeaderboardDeletion(m.GuildID, m.Author.ID, pending); saveErr != nil {
@@ -134,9 +142,11 @@ func handleLeaderboardDeleteCommand(s *discordgo.Session, m *discordgo.Message) 
 			return true
 		}
 
-		if deleteErr := deleteLeaderboardThing(m.GuildID, pending.Item); deleteErr != nil {
+		if deleteErr := deleteLeaderboardThing(m.GuildID, pending.Item, pending.ETag); deleteErr != nil {
 			if errors.Is(deleteErr, errLeaderboardItemNotFound) {
 				sendBotMessage(s, m.ChannelID, "That leaderboard item no longer exists.")
+			} else if errors.Is(deleteErr, errLeaderboardItemChanged) {
+				sendBotMessage(s, m.ChannelID, "That leaderboard item changed after you requested deletion. Review it and request deletion again.")
 			} else {
 				fmt.Printf("Unable to delete leaderboard item %s in guild %s: %s\n", pending.Item, m.GuildID, deleteErr)
 				sendBotMessage(s, m.ChannelID, "I couldn't delete that leaderboard item.")
@@ -166,53 +176,61 @@ func handleLeaderboardDeleteCommand(s *discordgo.Session, m *discordgo.Message) 
 	return true
 }
 
-func getLeaderboardThing(guildID string, item string) (PointItem, error) {
+func getLeaderboardThing(guildID string, item string) (leaderboardThingSnapshot, error) {
 	entity, err := leaderboardThingEntity(guildID, item)
 	if err != nil {
-		return PointItem{}, err
+		return leaderboardThingSnapshot{}, err
 	}
-	if err := entity.Get(30, storage.NoMetadata, nil); err != nil {
+	if err := retryStorageThrottling(func() error {
+		return entity.Get(30, storage.FullMetadata, nil)
+	}); err != nil {
 		if isStorageStatus(err, http.StatusNotFound) {
-			return PointItem{}, errLeaderboardItemNotFound
+			return leaderboardThingSnapshot{}, errLeaderboardItemNotFound
 		}
-		return PointItem{}, fmt.Errorf("get leaderboard item: %w", err)
+		return leaderboardThingSnapshot{}, fmt.Errorf("get leaderboard item: %w", err)
 	}
 
 	isUser, ok := entity.Properties["isUser"].(bool)
 	if !ok {
-		return PointItem{}, errors.New("leaderboard item has invalid isUser property")
+		return leaderboardThingSnapshot{}, errors.New("leaderboard item has invalid isUser property")
 	}
 	if isUser {
-		return PointItem{}, errLeaderboardItemNotFound
+		return leaderboardThingSnapshot{}, errLeaderboardItemNotFound
 	}
-	points, ok := entity.Properties["Points"].(float64)
-	if !ok {
-		return PointItem{}, errors.New("leaderboard item has invalid Points property")
+	points, valueErr := pointPropertyValue(entity.Properties["Points"])
+	if valueErr != nil {
+		return leaderboardThingSnapshot{}, valueErr
 	}
-	return PointItem{Item: entity.RowKey, Points: points, IsUser: false}, nil
+	if entity.OdataEtag == "" {
+		return leaderboardThingSnapshot{}, errors.New("leaderboard item is missing an ETag")
+	}
+	return leaderboardThingSnapshot{
+		PointItem: PointItem{Item: entity.RowKey, Points: points, IsUser: false},
+		ETag:      entity.OdataEtag,
+	}, nil
 }
 
-func deleteLeaderboardThing(guildID string, item string) error {
+func deleteLeaderboardThing(guildID string, item string, expectedETag string) error {
+	if expectedETag == "" {
+		return errLeaderboardItemChanged
+	}
 	entity, err := leaderboardThingEntity(guildID, item)
 	if err != nil {
 		return err
 	}
-	if err := entity.Get(30, storage.NoMetadata, nil); err != nil {
+	entity.OdataEtag = expectedETag
+	if err := retryStorageThrottling(func() error {
+		return entity.Delete(false, nil)
+	}); err != nil {
 		if isStorageStatus(err, http.StatusNotFound) {
 			return errLeaderboardItemNotFound
 		}
-		return fmt.Errorf("get leaderboard item before delete: %w", err)
-	}
-	isUser, ok := entity.Properties["isUser"].(bool)
-	if !ok || isUser {
-		return errLeaderboardItemNotFound
-	}
-	if err := entity.Delete(false, nil); err != nil {
-		if isStorageStatus(err, http.StatusNotFound) {
-			return errLeaderboardItemNotFound
+		if isETagConflict(err) {
+			return errLeaderboardItemChanged
 		}
 		return fmt.Errorf("delete leaderboard item: %w", err)
 	}
+	apiLeaderboardCache.invalidateGuild(guildID)
 	return nil
 }
 
@@ -241,9 +259,12 @@ func savePendingLeaderboardDeletion(guildID string, userID string, pending pendi
 	}
 	entity.Properties = map[string]interface{}{
 		"Item":      pending.Item,
+		"ETag":      pending.ETag,
 		"ExpiresAt": pending.ExpiresAt.UTC().Format(time.RFC3339),
 	}
-	if err := entity.InsertOrReplace(nil); err != nil {
+	if err := retryStorageThrottling(func() error {
+		return entity.InsertOrReplace(nil)
+	}); err != nil {
 		return fmt.Errorf("save pending leaderboard deletion: %w", err)
 	}
 	return nil
@@ -254,7 +275,9 @@ func getPendingLeaderboardDeletion(guildID string, userID string, now time.Time)
 	if err != nil {
 		return pendingLeaderboardDeletion{}, err
 	}
-	if err := entity.Get(30, storage.NoMetadata, nil); err != nil {
+	if err := retryStorageThrottling(func() error {
+		return entity.Get(30, storage.NoMetadata, nil)
+	}); err != nil {
 		if isStorageStatus(err, http.StatusNotFound) {
 			return pendingLeaderboardDeletion{}, errNoPendingDeletion
 		}
@@ -262,8 +285,9 @@ func getPendingLeaderboardDeletion(guildID string, userID string, now time.Time)
 	}
 
 	item, itemOK := entity.Properties["Item"].(string)
+	etag, etagOK := entity.Properties["ETag"].(string)
 	expiresAtValue, expiresOK := entity.Properties["ExpiresAt"].(string)
-	if !itemOK || !expiresOK {
+	if !itemOK || !etagOK || etag == "" || !expiresOK {
 		return pendingLeaderboardDeletion{}, errors.New("pending leaderboard deletion has invalid properties")
 	}
 	expiresAt, err := time.Parse(time.RFC3339, expiresAtValue)
@@ -274,7 +298,7 @@ func getPendingLeaderboardDeletion(guildID string, userID string, now time.Time)
 		_ = entity.Delete(true, nil)
 		return pendingLeaderboardDeletion{}, errNoPendingDeletion
 	}
-	return pendingLeaderboardDeletion{Item: item, ExpiresAt: expiresAt}, nil
+	return pendingLeaderboardDeletion{Item: item, ETag: etag, ExpiresAt: expiresAt}, nil
 }
 
 func clearPendingLeaderboardDeletion(guildID string, userID string) error {
@@ -282,7 +306,9 @@ func clearPendingLeaderboardDeletion(guildID string, userID string) error {
 	if err != nil {
 		return err
 	}
-	if err := entity.Delete(true, nil); err != nil {
+	if err := retryStorageThrottling(func() error {
+		return entity.Delete(true, nil)
+	}); err != nil {
 		if isStorageStatus(err, http.StatusNotFound) {
 			return errNoPendingDeletion
 		}
@@ -313,4 +339,25 @@ func isStorageStatus(err error, statusCode int) bool {
 
 	var storageErrPointer *storage.AzureStorageServiceError
 	return errors.As(err, &storageErrPointer) && storageErrPointer.StatusCode == statusCode
+}
+
+func isETagConflict(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Azure SDK v52 formats 412 errors with %v, so errors.As cannot unwrap them.
+	return isStorageStatus(err, http.StatusPreconditionFailed) ||
+		strings.Contains(err.Error(), "Etag didn't match")
+}
+
+func retryStorageThrottling(operation func() error) error {
+	var err error
+	for attempt := 0; attempt < storageOperationAttempts; attempt++ {
+		err = operation()
+		if !isStorageStatus(err, http.StatusTooManyRequests) {
+			return err
+		}
+		waitForStorageRetry(attempt)
+	}
+	return err
 }
