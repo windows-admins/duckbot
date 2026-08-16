@@ -88,19 +88,22 @@ func TestBuildLeaderboardEmbedIncludesWorstMembers(t *testing.T) {
 	}
 
 	embed := buildLeaderboardEmbed("618712310185197588", "WinAdmins", things, members, defaultWinnerEmoji, false, nil)
-	if len(embed.Fields) != 4 {
-		t.Fatalf("embed has %d fields, want 4", len(embed.Fields))
+	if len(embed.Fields) != 5 {
+		t.Fatalf("embed has %d fields, want 5", len(embed.Fields))
 	}
-	if embed.Fields[2].Name != "Worst of the Worst: Things" {
-		t.Fatalf("bottom things field name = %q", embed.Fields[2].Name)
+	if embed.Fields[2].Inline || embed.Fields[2].Name != "\u200b" || embed.Fields[2].Value != "\u200b" {
+		t.Fatalf("leaderboard row break is invalid: %#v", embed.Fields[2])
 	}
-	if !strings.HasPrefix(embed.Fields[2].Value, "**2.** EDGE — **-10**") {
-		t.Errorf("bottom things did not start with the worst item: %q", embed.Fields[2].Value)
+	if embed.Fields[3].Name != "Worst of the Worst: Things" {
+		t.Fatalf("bottom things field name = %q", embed.Fields[3].Name)
 	}
-	if embed.Fields[3].Name != "Worst of the Worst: Members" {
-		t.Fatalf("bottom members field name = %q", embed.Fields[3].Name)
+	if !strings.HasPrefix(embed.Fields[3].Value, "**2.** EDGE — **-10**") {
+		t.Errorf("bottom things did not start with the worst item: %q", embed.Fields[3].Value)
 	}
-	if !strings.HasPrefix(embed.Fields[3].Value, "**2.** <@618712310185197588> — **-5**") {
-		t.Errorf("bottom members did not start with the worst member: %q", embed.Fields[3].Value)
+	if embed.Fields[4].Name != "Worst of the Worst: Members" {
+		t.Fatalf("bottom members field name = %q", embed.Fields[4].Name)
+	}
+	if !strings.HasPrefix(embed.Fields[4].Value, "**2.** <@618712310185197588> — **-5**") {
+		t.Errorf("bottom members did not start with the worst member: %q", embed.Fields[4].Value)
 	}
 }
