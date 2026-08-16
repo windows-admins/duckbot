@@ -28,6 +28,15 @@ change the persisted visibility setting:
 
 Private and unconfigured guilds return HTTP 404 from leaderboard API routes.
 The first-ranked member uses a configurable emoji that defaults to `:high_heel:`.
+
+Managers, server administrators, and Mainduck can delete a non-user leaderboard item
+with a persisted five-minute confirmation:
+
+```text
+@DuckBot leaderboard delete ITEM
+@DuckBot leaderboard delete confirm
+@DuckBot leaderboard delete cancel
+```
 Public leaderboard responses include the Discord guild ID and current guild name:
 
 ```json
