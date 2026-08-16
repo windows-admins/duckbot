@@ -191,8 +191,7 @@ func getGuildManagerRole(guildID string) (string, error) {
 	}
 	err = entity.Get(30, storage.NoMetadata, nil)
 	if err != nil {
-		var storageErr *storage.AzureStorageServiceError
-		if errors.As(err, &storageErr) && storageErr.StatusCode == http.StatusNotFound {
+		if isStorageStatus(err, http.StatusNotFound) {
 			return "", nil
 		}
 		return "", fmt.Errorf("get manager config entity: %w", err)

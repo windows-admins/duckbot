@@ -48,6 +48,9 @@ func userMessageHandler(s *discordgo.Session, m *discordgo.Message) {
 		if handleCounterCommand(s, m) {
 			return
 		}
+		if handleLeaderboardDeleteCommand(s, m) {
+			return
+		}
 		if handleLeaderboardVisibilityCommand(s, m) {
 			return
 		}

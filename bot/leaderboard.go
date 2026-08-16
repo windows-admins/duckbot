@@ -170,8 +170,7 @@ func isGuildLeaderboardPublic(guildID string) (bool, error) {
 	}
 	err = entity.Get(30, storage.NoMetadata, nil)
 	if err != nil {
-		var storageErr *storage.AzureStorageServiceError
-		if errors.As(err, &storageErr) && storageErr.StatusCode == http.StatusNotFound {
+		if isStorageStatus(err, http.StatusNotFound) {
 			return defaultLeaderboardPublic, nil
 		}
 		return false, fmt.Errorf("get leaderboard config entity: %w", err)
@@ -211,8 +210,7 @@ func getGuildLeaderboardWinnerEmoji(guildID string) (string, error) {
 	}
 	err = entity.Get(30, storage.NoMetadata, nil)
 	if err != nil {
-		var storageErr *storage.AzureStorageServiceError
-		if errors.As(err, &storageErr) && storageErr.StatusCode == http.StatusNotFound {
+		if isStorageStatus(err, http.StatusNotFound) {
 			return defaultWinnerEmoji, nil
 		}
 		return "", fmt.Errorf("get leaderboard config entity: %w", err)
