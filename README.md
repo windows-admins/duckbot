@@ -34,8 +34,8 @@ with a persisted five-minute confirmation:
 
 ```text
 @DuckBot leaderboard delete ITEM
-@DuckBot leaderboard delete --confirm
-@DuckBot leaderboard delete --cancel
+@DuckBot leaderboard confirm-delete
+@DuckBot leaderboard cancel-delete
 ```
 Public leaderboard responses include the Discord guild ID and current guild name:
 

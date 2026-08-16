@@ -36,17 +36,17 @@ func parseLeaderboardDeleteCommand(content string, botID string) (leaderboardDel
 	content = strings.ReplaceAll(content, "<@!"+botID+">", "")
 	parts := strings.Fields(strings.TrimSpace(content))
 
+	if len(parts) == 2 && strings.EqualFold(parts[0], "leaderboard") && strings.EqualFold(parts[1], "confirm-delete") {
+		return leaderboardDeleteCommand{Action: "confirm"}, true, nil
+	}
+	if len(parts) == 2 && strings.EqualFold(parts[0], "leaderboard") && strings.EqualFold(parts[1], "cancel-delete") {
+		return leaderboardDeleteCommand{Action: "cancel"}, true, nil
+	}
 	if len(parts) < 2 || !strings.EqualFold(parts[0], "leaderboard") || !strings.EqualFold(parts[1], "delete") {
 		return leaderboardDeleteCommand{}, false, nil
 	}
 	if len(parts) < 3 {
-		return leaderboardDeleteCommand{}, true, errors.New("use `leaderboard delete <item>`, `leaderboard delete --confirm`, or `leaderboard delete --cancel`")
-	}
-	if len(parts) == 3 && strings.EqualFold(parts[2], "--confirm") {
-		return leaderboardDeleteCommand{Action: "confirm"}, true, nil
-	}
-	if len(parts) == 3 && strings.EqualFold(parts[2], "--cancel") {
-		return leaderboardDeleteCommand{Action: "cancel"}, true, nil
+		return leaderboardDeleteCommand{}, true, errors.New("use `leaderboard delete <item>`, `leaderboard confirm-delete`, or `leaderboard cancel-delete`")
 	}
 
 	item, err := normalizeLeaderboardItem(strings.Join(parts[2:], " "))
@@ -115,7 +115,7 @@ func handleLeaderboardDeleteCommand(s *discordgo.Session, m *discordgo.Message) 
 		}
 
 		sendBotMessage(s, m.ChannelID, fmt.Sprintf(
-			"Delete `%s` with %s points? Run <@%s> `leaderboard delete --confirm` within five minutes, or `leaderboard delete --cancel`.",
+			"Delete `%s` with %s points? Run <@%s> `leaderboard confirm-delete` within five minutes, or `leaderboard cancel-delete`.",
 			escapeDiscordMarkdown(item.Item),
 			formatPointTotal(item.Points),
 			s.State.User.ID,

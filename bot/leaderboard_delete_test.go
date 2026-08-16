@@ -27,13 +27,13 @@ func TestParseLeaderboardDeleteCommand(t *testing.T) {
 		},
 		{
 			name:       "confirm deletion",
-			content:    "<@123> leaderboard delete --confirm",
+			content:    "<@123> leaderboard confirm-delete",
 			wantAction: "confirm",
 			wantFound:  true,
 		},
 		{
 			name:       "cancel deletion",
-			content:    "<@123> leaderboard delete --cancel",
+			content:    "<@123> leaderboard cancel-delete",
 			wantAction: "cancel",
 			wantFound:  true,
 		},
@@ -42,6 +42,13 @@ func TestParseLeaderboardDeleteCommand(t *testing.T) {
 			content:    "<@123> leaderboard delete confirm",
 			wantAction: "request",
 			wantItem:   "CONFIRM",
+			wantFound:  true,
+		},
+		{
+			name:       "delete item named dash confirm",
+			content:    "<@123> leaderboard delete --confirm",
+			wantAction: "request",
+			wantItem:   "--CONFIRM",
 			wantFound:  true,
 		},
 		{
