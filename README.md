@@ -36,3 +36,9 @@ Public leaderboard responses include the Discord guild ID and current guild name
   "items": []
 }
 ```
+
+## Deployment image
+
+Production uses `rowdychildren/duckbot:latest`. Main-branch builds publish both a
+versioned image and the `latest` tag. The legacy `rowdychildren/duckbot3` image must
+not be used; it has not been updated since 2021 and can point the API at stale data.
